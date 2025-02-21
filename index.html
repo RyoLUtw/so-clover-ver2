@@ -2,528 +2,620 @@
 <html lang="en">
 
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Inverse Transform + Rotation Remapped Snapping</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
-            margin: 0;
-            background-color: #f5f5f5;
-        }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Inverse Transform + Rotation Remapped Snapping</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+      background-color: #f5f5f5;
+    }
 
-        /* Outer plate (rotates visually) */
-        .outer-plate {
-            transition: transform 0.5s ease;
-            transform-origin: center center;
-            display: inline-block;
-        }
+    /* Outer plate (rotates visually) */
+    .outer-plate {
+      transition: transform 0.5s ease;
+      transform-origin: center center;
+      display: inline-block;
+    }
 
-        /* The unrotated container inside */
-        .grid-container {
-            position: relative;
-            display: grid;
-            grid-template-columns: 1fr auto 1fr;
-            grid-template-rows: 1fr auto 1fr;
-            align-items: center;
-            justify-items: center;
-            gap: 0;
-        }
+    /* The unrotated container inside */
+    .grid-container {
+      position: relative;
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      grid-template-rows: 1fr auto 1fr;
+      align-items: center;
+      justify-items: center;
+      gap: 0;
+    }
 
-        .hint-input {
-            box-sizing: border-box;
-            text-align: center;
-            margin: 0;
-            padding: 5px;
-            font-size: 14px;
-            border: 1px solid #ccc;
-            border-radius: 3px;
-        }
+    .hint-input {
+      box-sizing: border-box;
+      text-align: center;
+      margin: 0;
+      padding: 5px;
+      font-size: 14px;
+      border: 1px solid #ccc;
+      border-radius: 3px;
+    }
 
-        .top-hint {
-            grid-column: 2;
-            grid-row: 1;
-            width: 300px;
-        }
+    .top-hint {
+      grid-column: 2;
+      grid-row: 1;
+      width: 300px;
+    }
 
-        .bottom-hint {
-            grid-column: 2;
-            grid-row: 3;
-            width: 300px;
-            transform: rotate(180deg);
-        }
+    .bottom-hint {
+      grid-column: 2;
+      grid-row: 3;
+      width: 300px;
+      transform: rotate(180deg);
+    }
 
-        .left-hint {
-            grid-column: 1;
-            grid-row: 2;
-            writing-mode: vertical-rl;
-            transform: rotate(180deg);
-            height: 300px;
-        }
+    .left-hint {
+      grid-column: 1;
+      grid-row: 2;
+      writing-mode: vertical-rl;
+      transform: rotate(180deg);
+      height: 300px;
+    }
 
-        .right-hint {
-            grid-column: 3;
-            grid-row: 2;
-            writing-mode: vertical-rl;
-            height: 300px;
-        }
+    .right-hint {
+      grid-column: 3;
+      grid-row: 2;
+      writing-mode: vertical-rl;
+      height: 300px;
+    }
 
-        /* 2×2 snapping grid in the center */
-        .grid {
-            grid-column: 2;
-            grid-row: 2;
-            display: grid;
-            grid-template-columns: repeat(2, 150px);
-            grid-template-rows: repeat(2, 150px);
-            border: 2px dashed #ccc;
-        }
+    /* 2×2 snapping grid in the center */
+    .grid {
+      grid-column: 2;
+      grid-row: 2;
+      display: grid;
+      grid-template-columns: repeat(2, 150px);
+      grid-template-rows: repeat(2, 150px);
+      border: 2px dashed #ccc;
+    }
 
-        .grid-cell {
-            width: 150px;
-            height: 150px;
-            border: 1px solid #ddd;
-            box-sizing: border-box;
-        }
+    .grid-cell {
+      width: 150px;
+      height: 150px;
+      border: 1px solid #ddd;
+      box-sizing: border-box;
+    }
 
-        /* Cards absolute in the .grid-container space */
-        .card {
-            width: 150px;
-            height: 150px;
-            display: grid;
-            grid-template-areas:
-                "top top"
-                "left right"
-                "bottom bottom";
-            position: absolute;
-            background: #fff;
-            border: 2px solid #ccc;
-            cursor: grab;
-            transition: transform 0.3s, border 0.3s;
-            z-index: 10;
-            touch-action: none;
-            /* for pointer events on touch */
-        }
+    /* Cards absolute in the .grid-container space */
+    .card {
+      width: 150px;
+      height: 150px;
+      display: grid;
+      grid-template-areas:
+        "top top"
+        "left right"
+        "bottom bottom";
+      position: absolute;
+      background: #fff;
+      border: 2px solid #ccc;
+      cursor: grab;
+      transition: transform 0.3s, border 0.3s;
+      z-index: 10;
+      touch-action: none;
+      /* for pointer events on touch */
+    }
 
-        .card.selected {
-            border: 2px solid #007bff;
-        }
+    .card.selected {
+      border: 2px solid #007bff;
+    }
 
-        .side {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 16px;
-            font-weight: bold;
-        }
+    .side {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      font-weight: bold;
+    }
 
-        .top {
-            grid-area: top;
-            transform: rotate(0deg);
-        }
+    .top {
+      grid-area: top;
+      transform: rotate(0deg);
+    }
 
-        .right {
-            grid-area: right;
-            transform: rotate(90deg);
-        }
+    .right {
+      grid-area: right;
+      transform: rotate(90deg);
+    }
 
-        .bottom {
-            grid-area: bottom;
-            transform: rotate(180deg);
-        }
+    .bottom {
+      grid-area: bottom;
+      transform: rotate(180deg);
+    }
 
-        .left {
-            grid-area: left;
-            transform: rotate(270deg);
-        }
+    .left {
+      grid-area: left;
+      transform: rotate(270deg);
+    }
 
-        .buttons {
-            margin-top: 20px;
-            display: flex;
-            gap: 10px;
-        }
+    .buttons {
+      margin-top: 20px;
+      display: flex;
+      gap: 10px;
+    }
 
-        button {
-            padding: 10px 20px;
-            font-size: 14px;
-            border: none;
-            background-color: #007bff;
-            color: white;
-            cursor: pointer;
-            border-radius: 5px;
-        }
+    button {
+      padding: 10px 20px;
+      font-size: 14px;
+      border: none;
+      background-color: #007bff;
+      color: white;
+      cursor: pointer;
+      border-radius: 5px;
+    }
 
-        button:hover {
-            background-color: #0056b3;
-        }
-    </style>
+    button:hover {
+      background-color: #0056b3;
+    }
+  </style>
 </head>
 
 <body>
-    <!-- Vocabulary input section -->
-    <div style="margin: 20px;">
-        <h2>Custom Vocabulary</h2>
-        <p>
-            Enter up to 16 words, separated by commas. If fewer than 16 words are provided,
-            random built-in words fill the remaining slots.
-        </p>
-        <textarea id="textInput" rows="4" cols="50" placeholder="Example: apple, car, book, ..."></textarea>
-        <br><br>
-        <button onclick="loadVoc()" style="padding: 8px 16px; cursor: pointer;">
-            Load Vocabulary
-        </button>
+  <!-- Vocabulary input section -->
+  <div style="margin: 20px;">
+    <h2>Custom Vocabulary</h2>
+    <p>
+      Enter up to 16 words, separated by commas. If fewer than 16 words are provided,
+      random built-in words fill the remaining slots.
+    </p>
+    <textarea id="textInput" rows="4" cols="50" placeholder="Example: apple, car, book, ..."></textarea>
+    <br><br>
+    <button onclick="loadVoc()" style="padding: 8px 16px; cursor: pointer;">
+      Load Vocabulary
+    </button>
+  </div>
+
+  <!-- Outer wrapper for visual rotation -->
+  <div class="outer-plate" id="outerPlate">
+    <div class="grid-container" id="plateContainer">
+      <input type="text" class="hint-input top-hint" placeholder="Top Hint" />
+      <div class="grid" id="grid">
+        <div class="grid-cell" data-row="0" data-col="0"></div>
+        <div class="grid-cell" data-row="0" data-col="1"></div>
+        <div class="grid-cell" data-row="1" data-col="0"></div>
+        <div class="grid-cell" data-row="1" data-col="1"></div>
+      </div>
+      <input type="text" class="hint-input bottom-hint" placeholder="Bottom Hint" />
+      <input type="text" class="hint-input left-hint" placeholder="Left Hint" />
+      <input type="text" class="hint-input right-hint" placeholder="Right Hint" />
+
+      <!-- Four cards -->
+      <div id="card1" class="card">
+        <div class="side top">Top</div>
+        <div class="side right">Right</div>
+        <div class="side bottom">Bottom</div>
+        <div class="side left">Left</div>
+      </div>
+      <div id="card2" class="card">
+        <div class="side top">Top</div>
+        <div class="side right">Right</div>
+        <div class="side bottom">Bottom</div>
+        <div class="side left">Left</div>
+      </div>
+      <div id="card3" class="card">
+        <div class="side top">Top</div>
+        <div class="side right">Right</div>
+        <div class="side bottom">Bottom</div>
+        <div class="side left">Left</div>
+      </div>
+      <div id="card4" class="card">
+        <div class="side top">Top</div>
+        <div class="side right">Right</div>
+        <div class="side bottom">Bottom</div>
+        <div class="side left">Left</div>
+      </div>
     </div>
+  </div>
 
-    <!-- Outer wrapper for visual rotation -->
-    <div class="outer-plate" id="outerPlate">
-        <div class="grid-container" id="plateContainer">
-            <input type="text" class="hint-input top-hint" placeholder="Top Hint" />
-            <div class="grid" id="grid">
-                <div class="grid-cell" data-row="0" data-col="0"></div>
-                <div class="grid-cell" data-row="0" data-col="1"></div>
-                <div class="grid-cell" data-row="1" data-col="0"></div>
-                <div class="grid-cell" data-row="1" data-col="1"></div>
-            </div>
-            <input type="text" class="hint-input bottom-hint" placeholder="Bottom Hint" />
-            <input type="text" class="hint-input left-hint" placeholder="Left Hint" />
-            <input type="text" class="hint-input right-hint" placeholder="Right Hint" />
+  <div class="buttons">
+    <button onclick="rotateSelectedCard()">Rotate Selected Card</button>
+    <button onclick="rotateEntireGrid()">Rotate Grid</button>
+    <button onclick="finishHint()">Finish Hint</button>
+    <button onclick="shareGame()">Share Game</button>
+  </div>
 
-            <!-- Four cards -->
-            <div id="card1" class="card">
-                <div class="side top">Top</div>
-                <div class="side right">Right</div>
-                <div class="side bottom">Bottom</div>
-                <div class="side left">Left</div>
-            </div>
-            <div id="card2" class="card">
-                <div class="side top">Top</div>
-                <div class="side right">Right</div>
-                <div class="side bottom">Bottom</div>
-                <div class="side left">Left</div>
-            </div>
-            <div id="card3" class="card">
-                <div class="side top">Top</div>
-                <div class="side right">Right</div>
-                <div class="side bottom">Bottom</div>
-                <div class="side left">Left</div>
-            </div>
-            <div id="card4" class="card">
-                <div class="side top">Top</div>
-                <div class="side right">Right</div>
-                <div class="side bottom">Bottom</div>
-                <div class="side left">Left</div>
-            </div>
-        </div>
-    </div>
+  <script>
+    /*******************************************************
+     * GLOBALS
+     *******************************************************/
+    let selectedCard = null;
+    let gridRotation = 0; // how many degrees we rotated outerPlate
 
-    <div class="buttons">
-        <button onclick="rotateSelectedCard()">Rotate Selected Card</button>
-        <button onclick="rotateEntireGrid()">Rotate Grid</button>
-        <button onclick="finishHint()">Finish Hint</button>
+    // We'll store each card's "left, top" in a map, so we can do incremental updates
+    const cardPositions = {
+      card1: { x: 0, y: 0 },
+      card2: { x: 0, y: 0 },
+      card3: { x: 0, y: 0 },
+      card4: { x: 0, y: 0 }
+    };
 
-    </div>
+    // A big vocabulary array
+    const builtInTW = [
+      "animal", "apple", "arrow", "basket", "beach", "bear", "bird", "book", "bottle", "box",
+      "boy", "branch", "bridge", "butterfly", "button", "cake", "camera", "car", "cat", "chair",
+      "chicken", "child", "church", "circle", "clock", "cloud", "clown", "coat", "corn", "cow",
+      "crowd", "crown", "cup", "deer", "desk", "door", "duck", "egg", "elephant", "eye",
+      "family", "fish", "flag", "flower", "frog", "game", "garden", "gate", "ghost", "giraffe",
+      "girl", "glass", "glove", "grape", "grass", "hat", "hill", "horse", "house", "island",
+      "jewel", "kangaroo", "kite", "lake", "leaf", "lion", "lizard", "man", "map", "moon",
+      "mountain", "mouse", "mouth", "mushroom", "nest", "net", "nose", "ocean", "orange", "owl",
+      "panda", "park", "pen", "pencil", "piano", "pig", "pineapple", "pizza", "planet", "plant",
+      "plate", "rabbit", "rainbow", "ring", "river", "road", "robot", "rock", "rocket", "roof",
+      "room", "rope", "rose", "seed", "shark", "sheep", "shelf", "ship", "shirt", "shoe",
+      "snake", "spider", "spoon", "star", "street", "sun", "table", "tail", "tree", "watch",
+      "water", "whale", "window", "zebra"
+    ];
 
-    <script>
-        /*******************************************************
-         * GLOBALS
-         *******************************************************/
-        let selectedCard = null;
-        let gridRotation = 0; // how many degrees we rotated outerPlate
+    /*******************************************************
+     * VOCABULARY
+     *******************************************************/
+    function loadVoc() {
+      let defaultTW = JSON.parse(JSON.stringify(builtInTW));
+      let inputText = document.getElementById('textInput').value;
+      let inputTW = inputText.split(',').map(s => s.trim());
 
-        // We'll store each card's "left, top" in a map, so we can do incremental updates
-        const cardPositions = {
-            card1: { x: 0, y: 0 },
-            card2: { x: 0, y: 0 },
-            card3: { x: 0, y: 0 },
-            card4: { x: 0, y: 0 }
+      // Replace empty with random
+      inputTW = inputTW.map(item => {
+        if (item === '' && defaultTW.length > 0) {
+          let r = Math.floor(Math.random() * defaultTW.length);
+          let replacement = defaultTW[r];
+          defaultTW.splice(r, 1);
+          return replacement;
+        }
+        return item;
+      });
+
+      // Fill up to 16
+      while (inputTW.length < 16 && defaultTW.length > 0) {
+        let r = Math.floor(Math.random() * defaultTW.length);
+        let candidate = defaultTW[r];
+        if (!inputTW.includes(candidate)) {
+          inputTW.push(candidate);
+        }
+        defaultTW.splice(r, 1);
+      }
+
+      // Shuffle
+      inputTW.sort(() => Math.random() - 0.5);
+
+      // Assign to 16 sides
+      let sideSelectors = [
+        "#card1 .top", "#card1 .right", "#card1 .bottom", "#card1 .left",
+        "#card2 .top", "#card2 .right", "#card2 .bottom", "#card2 .left",
+        "#card3 .top", "#card3 .right", "#card3 .bottom", "#card3 .left",
+        "#card4 .top", "#card4 .right", "#card4 .bottom", "#card4 .left"
+      ];
+      sideSelectors.forEach((sel, i) => {
+        let el = document.querySelector(sel);
+        if (el) el.textContent = inputTW[i] || "";
+      });
+    }
+
+    /*******************************************************
+     * ROTATE CARD vs. ROTATE GRID
+     *******************************************************/
+    function selectCard(card) {
+      if (selectedCard) {
+        selectedCard.classList.remove('selected');
+      }
+      selectedCard = card;
+      selectedCard.classList.add('selected');
+    }
+
+    function rotateSelectedCard() {
+      if (!selectedCard) return;
+      let rotation = parseInt(selectedCard.dataset.rotation || "0", 10);
+      rotation += 90;
+      selectedCard.style.transform = `rotate(${rotation}deg)`;
+      selectedCard.dataset.rotation = rotation;
+    }
+
+    function rotateEntireGrid() {
+      gridRotation += 90;
+      let outerPlate = document.getElementById('outerPlate');
+      outerPlate.style.transform = `rotate(${gridRotation}deg)`;
+    }
+
+    function finishHint() {
+      // 1) Reset the entire grid rotation
+      gridRotation = 0;
+      const outerPlate = document.getElementById("outerPlate");
+      outerPlate.style.transform = "rotate(0deg)";
+
+      // 2) We have four cards and four cells in a 2×2 grid.
+      //    We'll shuffle the array of cell positions so each card gets a unique cell.
+      let cellPositions = [
+        { row: 0, col: 0 },
+        { row: 0, col: 1 },
+        { row: 1, col: 0 },
+        { row: 1, col: 1 },
+      ];
+
+      // Shuffle the array of cell positions
+      cellPositions.sort(() => Math.random() - 0.5);
+
+      // The 4 cards
+      const cards = [
+        document.getElementById("card1"),
+        document.getElementById("card2"),
+        document.getElementById("card3"),
+        document.getElementById("card4")
+      ];
+
+      // For each card, assign one of the shuffled positions
+      cards.forEach((card, index) => {
+        let { row, col } = cellPositions[index];
+
+        // Snap it to that row/col so no overlapping
+        snapToGrid(card, row, col);
+
+        // Then rotate the card randomly (0, 90, 180, or 270)
+        const possibleRotations = [0, 90, 180, 270];
+        const rIndex = Math.floor(Math.random() * possibleRotations.length);
+        const newRotation = possibleRotations[rIndex];
+
+        // Update card's rotation
+        card.dataset.rotation = newRotation;
+        card.style.transform = `rotate(${newRotation}deg)`;
+      });
+    }
+
+    /*******************************************************
+     * DRAGGING + INVERSE ROTATION
+     *******************************************************/
+    function enableDragging(card) {
+      let lastX = 0,
+        lastY = 0;
+      const cardId = card.id; // 'card1', 'card2', etc.
+
+      card.addEventListener('pointerdown', (e) => {
+        card.style.zIndex = 9999;
+        selectCard(card);
+
+        lastX = e.clientX;
+        lastY = e.clientY;
+
+        card.setPointerCapture(e.pointerId);
+        card.style.cursor = 'grabbing';
+
+        const onPointerMove = (ev) => {
+          let dxScreen = ev.clientX - lastX;
+          let dyScreen = ev.clientY - lastY;
+
+          // Inverse-rotate by -gridRotation
+          let rad = -gridRotation * (Math.PI / 180);
+          let cosA = Math.cos(rad);
+          let sinA = Math.sin(rad);
+
+          let dxLocal = (dxScreen * cosA) - (dyScreen * sinA);
+          let dyLocal = (dxScreen * sinA) + (dyScreen * cosA);
+
+          // Update
+          cardPositions[cardId].x += dxLocal;
+          cardPositions[cardId].y += dyLocal;
+
+          card.style.left = cardPositions[cardId].x + "px";
+          card.style.top = cardPositions[cardId].y + "px";
+
+          lastX = ev.clientX;
+          lastY = ev.clientY;
         };
 
-        // A big vocabulary array
-        const builtInTW = [
-            "animal", "apple", "arrow", "basket", "beach", "bear", "bird", "book", "bottle", "box",
-            "boy", "branch", "bridge", "butterfly", "button", "cake", "camera", "car", "cat", "chair",
-            "chicken", "child", "church", "circle", "clock", "cloud", "clown", "coat", "corn", "cow",
-            "crowd", "crown", "cup", "deer", "desk", "door", "duck", "egg", "elephant", "eye",
-            "family", "fish", "flag", "flower", "frog", "game", "garden", "gate", "ghost", "giraffe",
-            "girl", "glass", "glove", "grape", "grass", "hat", "hill", "horse", "house", "island",
-            "jewel", "kangaroo", "kite", "lake", "leaf", "lion", "lizard", "man", "map", "moon",
-            "mountain", "mouse", "mouth", "mushroom", "nest", "net", "nose", "ocean", "orange", "owl",
-            "panda", "park", "pen", "pencil", "piano", "pig", "pineapple", "pizza", "planet", "plant",
-            "plate", "rabbit", "rainbow", "ring", "river", "road", "robot", "rock", "rocket", "roof",
-            "room", "rope", "rose", "seed", "shark", "sheep", "shelf", "ship", "shirt", "shoe",
-            "snake", "spider", "spoon", "star", "street", "sun", "table", "tail", "tree", "watch",
-            "water", "whale", "window", "zebra"
-        ];
+        const onPointerUp = (ev) => {
+          card.style.cursor = 'grab';
+          card.releasePointerCapture(ev.pointerId);
+          card.removeEventListener('pointermove', onPointerMove);
+          card.removeEventListener('pointerup', onPointerUp);
 
-        /*******************************************************
-         * VOCABULARY
-         *******************************************************/
-        function loadVoc() {
-            let defaultTW = JSON.parse(JSON.stringify(builtInTW));
-            let inputText = document.getElementById('textInput').value;
-            let inputTW = inputText.split(',').map(s => s.trim());
+          // Snapping with rotation-based re-mapping
+          const gridRect = document.getElementById('grid').getBoundingClientRect();
+          const xUp = ev.clientX,
+            yUp = ev.clientY;
 
-            // Replace empty with random
-            inputTW = inputTW.map(item => {
-                if (item === '' && defaultTW.length > 0) {
-                    let r = Math.floor(Math.random() * defaultTW.length);
-                    let replacement = defaultTW[r];
-                    defaultTW.splice(r, 1);
-                    return replacement;
-                }
-                return item;
-            });
+          if (xUp > gridRect.left && xUp < gridRect.right &&
+            yUp > gridRect.top && yUp < gridRect.bottom) {
 
-            // Fill up to 16
-            while (inputTW.length < 16 && defaultTW.length > 0) {
-                let r = Math.floor(Math.random() * defaultTW.length);
-                let candidate = defaultTW[r];
-                if (!inputTW.includes(candidate)) {
-                    inputTW.push(candidate);
-                }
-                defaultTW.splice(r, 1);
-            }
+            let cellWidth = 150;
+            let cellHeight = 150;
 
-            // Shuffle
-            inputTW.sort(() => Math.random() - 0.5);
+            // FIRST: figure out the "visual row/col" by dividing screen coords
+            let vCol = Math.floor((xUp - gridRect.left) / cellWidth);
+            let vRow = Math.floor((yUp - gridRect.top) / cellHeight);
+            // vRow, vCol is the "visual" row/col based on how it looks on screen.
 
-            // Assign to 16 sides
-            let sideSelectors = [
-                "#card1 .top", "#card1 .right", "#card1 .bottom", "#card1 .left",
-                "#card2 .top", "#card2 .right", "#card2 .bottom", "#card2 .left",
-                "#card3 .top", "#card3 .right", "#card3 .bottom", "#card3 .left",
-                "#card4 .top", "#card4 .right", "#card4 .bottom", "#card4 .left"
-            ];
-            sideSelectors.forEach((sel, i) => {
-                let el = document.querySelector(sel);
-                if (el) el.textContent = inputTW[i] || "";
-            });
-        }
+            // THEN: remap that (vRow, vCol) to the unrotated row,col
+            let [row, col] = mapVisualToLogical(vRow, vCol, gridRotation);
 
-        /*******************************************************
-         * ROTATE CARD vs. ROTATE GRID
-         *******************************************************/
-        function selectCard(card) {
-            if (selectedCard) {
-                selectedCard.classList.remove('selected');
-            }
-            selectedCard = card;
-            selectedCard.classList.add('selected');
-        }
+            // Now row, col is the actual cell in unrotated terms.
+            let snappedXScreen = gridRect.left + col * cellWidth;
+            let snappedYScreen = gridRect.top + row * cellHeight;
 
-        function rotateSelectedCard() {
-            if (!selectedCard) return;
-            let rotation = parseInt(selectedCard.dataset.rotation || "0", 10);
-            rotation += 90;
-            selectedCard.style.transform = `rotate(${rotation}deg)`;
-            selectedCard.dataset.rotation = rotation;
-        }
-
-        function rotateEntireGrid() {
-            gridRotation += 90;
-            let outerPlate = document.getElementById('outerPlate');
-            outerPlate.style.transform = `rotate(${gridRotation}deg)`;
-        }
-        function finishHint() {
-            // 1) Reset the entire grid rotation
-            gridRotation = 0;  // or whatever global variable you use
-            const outerPlate = document.getElementById("outerPlate");
-            outerPlate.style.transform = "rotate(0deg)";
-
-            // 2) We have four cards and four cells in a 2×2 grid.
-            //    We'll shuffle the array of cell positions so each card gets a unique cell.
-
-            let cellPositions = [
-                { row: 0, col: 0 },
-                { row: 0, col: 1 },
-                { row: 1, col: 0 },
-                { row: 1, col: 1 },
-            ];
-
-            // Shuffle the array of cell positions
-            // A simple way: cellPositions.sort(() => Math.random() - 0.5);
-            cellPositions.sort(() => Math.random() - 0.5);
-
-            // The 4 cards
-            const cards = [
-                document.getElementById("card1"),
-                document.getElementById("card2"),
-                document.getElementById("card3"),
-                document.getElementById("card4")
-            ];
-
-            // For each card, assign one of the shuffled positions
-            cards.forEach((card, index) => {
-                let { row, col } = cellPositions[index];
-
-                // Snap it to that row/col so no overlapping
-                snapToGrid(card, row, col);
-
-                // Then rotate the card randomly (0, 90, 180, or 270)
-                const possibleRotations = [0, 90, 180, 270];
-                const rIndex = Math.floor(Math.random() * possibleRotations.length);
-                const newRotation = possibleRotations[rIndex];
-
-                // Update card's rotation
-                card.dataset.rotation = newRotation;
-                card.style.transform = `rotate(${newRotation}deg)`;
-            });
-        }
-
-
-        /*******************************************************
-         * DRAGGING + INVERSE ROTATION
-         *******************************************************/
-        function enableDragging(card) {
-            let lastX = 0, lastY = 0;
-            const cardId = card.id; // 'card1', 'card2', etc.
-
-            card.addEventListener('pointerdown', (e) => {
-                card.style.zIndex = 9999;
-                selectCard(card);
-
-                lastX = e.clientX;
-                lastY = e.clientY;
-
-                card.setPointerCapture(e.pointerId);
-                card.style.cursor = 'grabbing';
-
-                const onPointerMove = (ev) => {
-                    let dxScreen = ev.clientX - lastX;
-                    let dyScreen = ev.clientY - lastY;
-
-                    // Inverse-rotate by -gridRotation
-                    let rad = -gridRotation * (Math.PI / 180);
-                    let cosA = Math.cos(rad);
-                    let sinA = Math.sin(rad);
-
-                    let dxLocal = (dxScreen * cosA) - (dyScreen * sinA);
-                    let dyLocal = (dxScreen * sinA) + (dyScreen * cosA);
-
-                    // Update
-                    cardPositions[cardId].x += dxLocal;
-                    cardPositions[cardId].y += dyLocal;
-
-                    card.style.left = cardPositions[cardId].x + "px";
-                    card.style.top = cardPositions[cardId].y + "px";
-
-                    lastX = ev.clientX;
-                    lastY = ev.clientY;
-                };
-
-                const onPointerUp = (ev) => {
-                    card.style.cursor = 'grab';
-                    card.releasePointerCapture(ev.pointerId);
-                    card.removeEventListener('pointermove', onPointerMove);
-                    card.removeEventListener('pointerup', onPointerUp);
-
-                    // Snapping with rotation-based re-mapping
-                    const gridRect = document.getElementById('grid').getBoundingClientRect();
-                    const xUp = ev.clientX, yUp = ev.clientY;
-
-                    if (xUp > gridRect.left && xUp < gridRect.right &&
-                        yUp > gridRect.top && yUp < gridRect.bottom) {
-
-                        let cellWidth = 150;
-                        let cellHeight = 150;
-
-                        // FIRST: figure out the "visual row/col" by dividing screen coords
-                        let vCol = Math.floor((xUp - gridRect.left) / cellWidth);
-                        let vRow = Math.floor((yUp - gridRect.top) / cellHeight);
-                        // vRow, vCol is the "visual" row/col based on how it looks on screen.
-
-                        // THEN: we must remap that (vRow, vCol) to the unrotated row,col
-                        let [row, col] = mapVisualToLogical(vRow, vCol, gridRotation);
-
-                        // Now row, col is the actual cell in unrotated terms.
-                        // So we place the card in that cell's container coords.
-                        let snappedXScreen = gridRect.left + col * cellWidth;
-                        let snappedYScreen = gridRect.top + row * cellHeight;
-
-                        const plateRect = document.getElementById('plateContainer').getBoundingClientRect();
-                        let snappedXLocal = snappedXScreen - plateRect.left;
-                        let snappedYLocal = snappedYScreen - plateRect.top;
-
-                        cardPositions[cardId].x = snappedXLocal;
-                        cardPositions[cardId].y = snappedYLocal;
-                        card.style.left = snappedXLocal + "px";
-                        card.style.top = snappedYLocal + "px";
-                    }
-
-                    card.style.zIndex = 10;
-                };
-
-                card.addEventListener('pointermove', onPointerMove);
-                card.addEventListener('pointerup', onPointerUp);
-            });
-        }
-
-        /*******************************************************
-         * MAP VISUAL (row, col) => LOGICAL (row, col)
-         * (2×2 grid only; rotation = multiple of 90°)
-         *******************************************************/
-        function mapVisualToLogical(vRow, vCol, rotationDeg) {
-            // Normalize rotation to one of 0, 90, 180, 270
-            let rot = ((rotationDeg % 360) + 360) % 360;
-            switch (rot) {
-                case 0:
-                    // No rotation
-                    return [vRow, vCol];
-                case 90:
-                    // (vRow, vCol) => (1 - vCol, vRow)
-                    return [1 - vCol, vRow];
-                case 180:
-                    // (vRow, vCol) => (1 - vRow, 1 - vCol)
-                    return [1 - vRow, 1 - vCol];
-                case 270:
-                    // (vRow, vCol) => (vCol, 1 - vRow)
-                    return [vCol, 1 - vRow];
-                default:
-                    return [vRow, vCol];
-            }
-        }
-
-
-        /*******************************************************
-         * INITIALIZE
-         *******************************************************/
-        const c1 = document.getElementById('card1');
-        const c2 = document.getElementById('card2');
-        const c3 = document.getElementById('card3');
-        const c4 = document.getElementById('card4');
-
-        [c1, c2, c3, c4].forEach(enableDragging);
-        [c1, c2, c3, c4].forEach((c) => {
-            c.addEventListener('click', () => selectCard(c));
-        });
-
-        // Optionally snap them initially
-        function snapToGrid(card, row, col) {
             const plateRect = document.getElementById('plateContainer').getBoundingClientRect();
-            const gridRect = document.getElementById('grid').getBoundingClientRect();
-            const cellW = 150, cellH = 150;
+            let snappedXLocal = snappedXScreen - plateRect.left;
+            let snappedYLocal = snappedYScreen - plateRect.top;
 
-            let xScreen = gridRect.left + col * cellW;
-            let yScreen = gridRect.top + row * cellH;
+            cardPositions[cardId].x = snappedXLocal;
+            cardPositions[cardId].y = snappedYLocal;
+            card.style.left = snappedXLocal + "px";
+            card.style.top = snappedYLocal + "px";
+          }
 
-            let xLocal = xScreen - plateRect.left;
-            let yLocal = yScreen - plateRect.top;
+          card.style.zIndex = 10;
+        };
 
-            cardPositions[card.id].x = xLocal;
-            cardPositions[card.id].y = yLocal;
-            card.style.left = xLocal + "px";
-            card.style.top = yLocal + "px";
-        }
+        card.addEventListener('pointermove', onPointerMove);
+        card.addEventListener('pointerup', onPointerUp);
+      });
+    }
 
-        snapToGrid(c1, 0, 0);
-        snapToGrid(c2, 0, 1);
-        snapToGrid(c3, 1, 0);
-        snapToGrid(c4, 1, 1);
-    </script>
+    /*******************************************************
+     * MAP VISUAL (row, col) => LOGICAL (row, col)
+     * (2×2 grid only; rotation = multiple of 90°)
+     *******************************************************/
+    function mapVisualToLogical(vRow, vCol, rotationDeg) {
+      let rot = ((rotationDeg % 360) + 360) % 360;
+      switch (rot) {
+        case 0:
+          return [vRow, vCol];
+        case 90:
+          return [1 - vCol, vRow];
+        case 180:
+          return [1 - vRow, 1 - vCol];
+        case 270:
+          return [vCol, 1 - vRow];
+        default:
+          return [vRow, vCol];
+      }
+    }
+
+    /*******************************************************
+     * SHARE GAME: GENERATE A URL WITH THE CURRENT STATE
+     *******************************************************/
+     function shareGame() {
+  // Get hints
+  const topHint = document.querySelector(".top-hint").value;
+  const bottomHint = document.querySelector(".bottom-hint").value;
+  const leftHint = document.querySelector(".left-hint").value;
+  const rightHint = document.querySelector(".right-hint").value;
+
+  // Get vocabulary from each card side in the same order as loadVoc assigns them.
+  const sideSelectors = [
+    "#card1 .top", "#card1 .right", "#card1 .bottom", "#card1 .left",
+    "#card2 .top", "#card2 .right", "#card2 .bottom", "#card2 .left",
+    "#card3 .top", "#card3 .right", "#card3 .bottom", "#card3 .left",
+    "#card4 .top", "#card4 .right", "#card4 .bottom", "#card4 .left"
+  ];
+  const vocab = sideSelectors.map(sel => {
+    let el = document.querySelector(sel);
+    return el ? el.textContent : "";
+  });
+
+  // Build URL query parameters. URLSearchParams will automatically handle encoding.
+  const params = new URLSearchParams();
+  params.set("topHint", topHint);
+  params.set("bottomHint", bottomHint);
+  params.set("leftHint", leftHint);
+  params.set("rightHint", rightHint);
+  // Join the vocab words with commas.
+  params.set("vocab", vocab.join(","));
+
+  const shareUrl = window.location.origin + window.location.pathname + "?" + params.toString();
+
+  // Auto copy the URL to clipboard
+  if (navigator.clipboard && window.isSecureContext) {
+    // Use Clipboard API
+    navigator.clipboard.writeText(shareUrl).then(() => {
+      alert("URL copied to clipboard!");
+    }).catch(err => {
+      console.error("Failed to copy: ", err);
+    });
+  } else {
+    // Fallback for older browsers
+    const textArea = document.createElement("textarea");
+    textArea.value = shareUrl;
+    // Avoid scrolling to bottom
+    textArea.style.top = "0";
+    textArea.style.left = "0";
+    textArea.style.position = "fixed";
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+    try {
+      document.execCommand("copy");
+      alert("URL copied to clipboard!");
+    } catch (err) {
+      console.error("Fallback: Unable to copy", err);
+    }
+    document.body.removeChild(textArea);
+  }
+}
+
+    /*******************************************************
+     * LOAD GAME STATE FROM URL PARAMETERS
+     *******************************************************/
+    function loadGameFromURL() {
+      const params = new URLSearchParams(window.location.search);
+      const topHint = params.get("topHint");
+      const bottomHint = params.get("bottomHint");
+      const leftHint = params.get("leftHint");
+      const rightHint = params.get("rightHint");
+      if (topHint !== null) document.querySelector(".top-hint").value = topHint;
+      if (bottomHint !== null) document.querySelector(".bottom-hint").value = bottomHint;
+      if (leftHint !== null) document.querySelector(".left-hint").value = leftHint;
+      if (rightHint !== null) document.querySelector(".right-hint").value = rightHint;
+
+      const vocabParam = params.get("vocab");
+      if (vocabParam) {
+        const vocabArray = vocabParam.split(",");
+        const sideSelectors = [
+          "#card1 .top", "#card1 .right", "#card1 .bottom", "#card1 .left",
+          "#card2 .top", "#card2 .right", "#card2 .bottom", "#card2 .left",
+          "#card3 .top", "#card3 .right", "#card3 .bottom", "#card3 .left",
+          "#card4 .top", "#card4 .right", "#card4 .bottom", "#card4 .left"
+        ];
+        sideSelectors.forEach((sel, i) => {
+          const el = document.querySelector(sel);
+          if (el && vocabArray[i] !== undefined) {
+            el.textContent = vocabArray[i];
+          }
+        });
+      }
+      finishHint();
+    }
+
+    /*******************************************************
+     * INITIALIZE
+     *******************************************************/
+    const c1 = document.getElementById('card1');
+    const c2 = document.getElementById('card2');
+    const c3 = document.getElementById('card3');
+    const c4 = document.getElementById('card4');
+
+    [c1, c2, c3, c4].forEach(enableDragging);
+    [c1, c2, c3, c4].forEach((c) => {
+      c.addEventListener('click', () => selectCard(c));
+    });
+
+    // Optionally snap them initially
+    function snapToGrid(card, row, col) {
+      const plateRect = document.getElementById('plateContainer').getBoundingClientRect();
+      const gridRect = document.getElementById('grid').getBoundingClientRect();
+      const cellW = 150,
+        cellH = 150;
+
+      let xScreen = gridRect.left + col * cellW;
+      let yScreen = gridRect.top + row * cellH;
+
+      let xLocal = xScreen - plateRect.left;
+      let yLocal = yScreen - plateRect.top;
+
+      cardPositions[card.id].x = xLocal;
+      cardPositions[card.id].y = yLocal;
+      card.style.left = xLocal + "px";
+      card.style.top = yLocal + "px";
+    }
+
+    snapToGrid(c1, 0, 0);
+    snapToGrid(c2, 0, 1);
+    snapToGrid(c3, 1, 0);
+    snapToGrid(c4, 1, 1);
+
+    // Load game state from URL parameters (if any)
+    loadGameFromURL();
+  </script>
 </body>
 
 </html>
