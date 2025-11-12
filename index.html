@@ -1183,7 +1183,10 @@
           left: card.querySelector('.left').textContent
         };
         const order = ['top', 'right', 'bottom', 'left'];
-        const steps = (normalizeDegrees(state.cards[cardId].rotation) / 90) % 4;
+        const placementZone = state.cardPlacement[cardId];
+        const extraRotation = placementZone && placementZone.startsWith('grid-') ? state.gridRotation : 0;
+        const totalRotation = normalizeDegrees(state.cards[cardId].rotation + extraRotation);
+        const steps = (totalRotation / 90) % 4;
         const oriented = {};
         order.forEach((dir, index) => {
           const fromIndex = (index - steps + 4) % 4;
@@ -1300,9 +1303,6 @@
         pointerState.hasMoved = false;
         pointerState.usingLocalSpace = state.cards[card.id].space === 'grid';
         pointerState.previousZone = state.cardPlacement[card.id] || null;
-        if (pointerState.previousZone) {
-          state.zoneOccupancy[pointerState.previousZone] = null;
-        }
         card.setPointerCapture(event.pointerId);
         card.style.cursor = 'grabbing';
         card.addEventListener('pointermove', onCardPointerMove);
