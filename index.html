@@ -642,6 +642,7 @@
           <button id="rotateCardCCW" class="rotate-card-control" title="Rotate selected card counter-clockwise">↺ Rotate Card</button>
           <button id="rotateCardCW" class="rotate-card-control" title="Rotate selected card clockwise">↻ Rotate Card</button>
           <button id="rotateGridBtn">↻ Rotate Grid</button>
+          <button id="shareGameBtn" class="hidden">Share Game</button>
           <button id="confirmHintBtn" class="primary-action">Confirm Hints</button>
           <button id="checkAnswerBtn" class="primary-action hidden">Check Answer</button>
         </div>
@@ -747,6 +748,7 @@
     const rotateCWBtn = document.getElementById('rotateCardCW');
     const confirmHintBtn = document.getElementById('confirmHintBtn');
     const checkAnswerBtn = document.getElementById('checkAnswerBtn');
+    const shareGameBtn = document.getElementById('shareGameBtn');
 
     const state = {
       phase: 'menu',
@@ -765,7 +767,8 @@
       elapsedSeconds: 0,
       timerInterval: null,
       resumeTimerOnClose: false,
-      checkAttempts: 0
+      checkAttempts: 0,
+      isSharedGame: false
     };
 
     /*******************************************************
@@ -909,11 +912,15 @@
       state.fillerWords = [...shuffled];
       state.pairHints = ['', '', '', ''];
       state.activePairIndex = 0;
+      state.isSharedGame = false;
       state.phase = 'hint';
       document.getElementById('mainMenu').classList.add('hidden');
       document.getElementById('gameArea').classList.remove('hidden');
       controlPanel.hidden = false;
-      legend.hidden = false;
+      legend.hidden = true;
+      if (shareGameBtn) {
+        shareGameBtn.classList.add('hidden');
+      }
       timerDisplay.classList.remove('hidden');
       state.elapsedSeconds = 0;
       updateTimerDisplay();
@@ -1033,6 +1040,9 @@
       });
 
       resetCardsToSolution();
+      if (shareGameBtn) {
+        shareGameBtn.classList.remove('hidden');
+      }
     }
 
     function resetCardsToSolution() {
@@ -1061,7 +1071,11 @@
         rotateCCWBtn.classList.add('hidden');
         rotateCWBtn.classList.add('hidden');
         checkAnswerBtn.classList.add('hidden');
-        confirmHintBtn.classList.remove('hidden');
+        if (state.isSharedGame) {
+          confirmHintBtn.classList.add('hidden');
+        } else {
+          confirmHintBtn.classList.remove('hidden');
+        }
         lockCards(true);
         stopTimer();
         state.elapsedSeconds = 0;
@@ -1073,6 +1087,9 @@
         checkAnswerBtn.classList.remove('hidden');
         confirmHintBtn.classList.add('hidden');
         lockCards(false);
+        if (shareGameBtn) {
+          shareGameBtn.classList.add('hidden');
+        }
       }
     }
 
@@ -1273,9 +1290,11 @@
     }
 
     function startPuzzlePhase() {
+      state.isSharedGame = false;
       setPhase('solving');
       gridRotation = 0;
       document.getElementById('outerPlate').style.transform = 'rotate(0deg)';
+      legend.hidden = true;
       const cellPositions = [
         { row: 0, col: 0 },
         { row: 0, col: 1 },
@@ -1305,6 +1324,7 @@
      *******************************************************/
     checkAnswerBtn.addEventListener('click', () => {
       pauseTimer();
+      legend.hidden = false;
       const unsnapped = cards.some((card) => typeof card.dataset.row === 'undefined' || typeof card.dataset.col === 'undefined');
       if (unsnapped) {
         state.resumeTimerOnClose = true;
@@ -1372,6 +1392,163 @@
       }
     }
 
+    /*******************************************************
+     * SHARE GAME UTILITIES
+     *******************************************************/
+    function encodeList(values) {
+      return values
+        .map((value) => (value ?? '').replace(/\\/g, '\\\\').replace(/,/g, '\\,'))
+        .join(',');
+    }
+
+    function decodeList(value) {
+      const result = [];
+      let current = '';
+      let escaping = false;
+      for (const char of value) {
+        if (escaping) {
+          current += char;
+          escaping = false;
+        } else if (char === '\\') {
+          escaping = true;
+        } else if (char === ',') {
+          result.push(current);
+          current = '';
+        } else {
+          current += char;
+        }
+      }
+      result.push(current);
+      return result;
+    }
+
+    function buildShareableUrl() {
+      const combos = [
+        { param: 'topCombination', index: 0 },
+        { param: 'rightCombination', index: 1 },
+        { param: 'bottomCombination', index: 2 },
+        { param: 'leftCombination', index: 3 }
+      ];
+
+      const params = new URLSearchParams();
+      for (const { param, index } of combos) {
+        const hint = (state.pairHints[index] || '').trim();
+        const pair = state.selectedPairs[index] || [];
+        if (!hint || pair.length < 2 || !pair[0] || !pair[1]) {
+          return null;
+        }
+        params.set(param, encodeList([hint, pair[0], pair[1]]));
+      }
+
+      if ((state.fillerWords || []).length < 8) {
+        return null;
+      }
+      const extraTargets = state.fillerWords.slice(0, 8);
+      if (extraTargets.some((word) => !word)) {
+        return null;
+      }
+      params.set('extraTargets', encodeList(extraTargets));
+
+      const baseUrl = `${window.location.origin}${window.location.pathname}`;
+      const query = params.toString();
+      return query ? `${baseUrl}?${query}` : baseUrl;
+    }
+
+    async function handleShareGameClick() {
+      const url = buildShareableUrl();
+      if (!url) {
+        showMessage('Not ready to share', 'Finish entering all hints before sharing this puzzle.');
+        return;
+      }
+
+      try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          await navigator.clipboard.writeText(url);
+          showMessage('Link copied', `Share this link with your team:<br/><code>${url}</code>`);
+        } else {
+          throw new Error('Clipboard unavailable');
+        }
+      } catch (error) {
+        showMessage('Share this game', `Copy and share this link:<br/><code>${url}</code>`);
+      }
+    }
+
+    function prepareSharedStartModal() {
+      resetConfirmModal();
+      document.getElementById('confirmMessage').innerHTML =
+        '<p>This shared puzzle is ready. Click <strong>Start Game</strong> when your team is ready to begin.</p>';
+      document.getElementById('confirmActions').classList.add('hidden');
+      document.getElementById('startGameBtn').classList.remove('hidden');
+      showModal('confirmModal');
+    }
+
+    function loadSharedGame(hints, pairs, fillers) {
+      state.isSharedGame = true;
+      state.selectedPairs = pairs.map((pair) => [pair[0].trim(), pair[1].trim()]);
+      state.pairHints = hints.map((hint) => hint.trim());
+      state.fillerWords = fillers.slice(0, 8).map((word) => word.trim());
+      state.hintRecords = state.selectedPairs.map((words, index) => ({ words, hint: state.pairHints[index] }));
+      state.activeWords = [...state.selectedPairs.flat(), ...state.fillerWords];
+      state.activePairIndex = 0;
+      state.checkAttempts = 0;
+      state.elapsedSeconds = 0;
+      state.resumeTimerOnClose = false;
+
+      document.getElementById('mainMenu').classList.add('hidden');
+      document.getElementById('gameArea').classList.remove('hidden');
+      controlPanel.hidden = false;
+      legend.hidden = true;
+      timerDisplay.classList.remove('hidden');
+
+      updateTimerDisplay();
+      clearCardStatuses();
+      lockCards(true);
+      applyHintsAndWords();
+      setPhase('pre-solve');
+      prepareSharedStartModal();
+    }
+
+    function initSharedGameFromUrl() {
+      const params = new URLSearchParams(window.location.search);
+      const combos = [
+        { param: 'topCombination', index: 0 },
+        { param: 'rightCombination', index: 1 },
+        { param: 'bottomCombination', index: 2 },
+        { param: 'leftCombination', index: 3 }
+      ];
+
+      const hints = [];
+      const pairs = [];
+
+      for (const { param, index } of combos) {
+        const raw = params.get(param);
+        if (!raw) {
+          return;
+        }
+        const values = decodeList(raw);
+        if (values.length < 3) {
+          return;
+        }
+        const [hint, wordA, wordB] = values;
+        if (!hint || !wordA || !wordB) {
+          return;
+        }
+        hints[index] = hint;
+        pairs[index] = [wordA, wordB];
+      }
+
+      const extrasRaw = params.get('extraTargets');
+      if (!extrasRaw) {
+        return;
+      }
+      const extraWords = decodeList(extrasRaw).map((word) => word.trim());
+      if (extraWords.length < 8 || extraWords.slice(0, 8).some((word) => !word.trim())) {
+        return;
+      }
+
+      loadSharedGame(hints, pairs, extraWords);
+    }
+
     function showMessage(title, body) {
       document.getElementById('messageTitle').textContent = title;
       document.getElementById('messageBody').innerHTML = `<p>${body}</p>`;
@@ -1385,6 +1562,12 @@
       }
       state.resumeTimerOnClose = false;
     });
+
+    if (shareGameBtn) {
+      shareGameBtn.addEventListener('click', handleShareGameClick);
+    }
+
+    initSharedGameFromUrl();
   </script>
 </body>
 
