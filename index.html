@@ -1,881 +1,1525 @@
 <!DOCTYPE html>
 <html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>So Clover Refined</title>
+    <style>
+      :root {
+        --clover-deep: #1f5a37;
+        --clover-forest: #2f7a47;
+        --clover-fern: #3f9b5b;
+        --clover-soft: #e5f7e7;
+        --clover-mist: #f4fbf5;
+        --surface-glass: rgba(255, 255, 255, 0.88);
+        --ink-strong: #203428;
+        --ink-muted: #4d6958;
+        --error-red: #d64646;
+        --error-orange: #f28c28;
+        --error-yellow: #f2c228;
+        --success-green: #2a9d54;
+      }
 
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>So Clover Refined</title>
-  <style>
-    :root {
-      --clover-dark: #24613f;
-      --clover-medium: #3a8d57;
-      --clover-light: #dff5e0;
-      --clover-mist: #f1faf3;
-      --clover-highlight: #9ed9a0;
-      --text-main: #1e2a23;
-      --text-muted: #3d5a49;
-    }
+      * {
+        box-sizing: border-box;
+      }
 
-    * {
-      box-sizing: border-box;
-    }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: "Poppins", "Segoe UI", Arial, sans-serif;
+        background: radial-gradient(circle at center, #ffffff 0%, var(--clover-mist) 55%, var(--clover-soft) 100%);
+        color: var(--ink-strong);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 32px 16px 48px;
+      }
 
-    body {
-      margin: 0;
-      min-height: 100vh;
-      font-family: "Poppins", "Segoe UI", Arial, sans-serif;
-      background: radial-gradient(circle at top, var(--clover-mist), var(--clover-light) 60%, #ffffff 100%);
-      color: var(--text-main);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 32px 16px 48px;
-    }
-
-    main.app-shell {
-      width: min(1100px, 100%);
-      background: rgba(255, 255, 255, 0.82);
-      backdrop-filter: blur(6px);
-      border-radius: 24px;
-      box-shadow: 0 24px 60px rgba(36, 97, 63, 0.18);
-      padding: 32px;
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) 220px;
-      gap: 32px;
-    }
-
-    header.app-header {
-      grid-column: 1 / -1;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 12px;
-      text-align: center;
-    }
-
-    header.app-header h1 {
-      margin: 0;
-      font-size: 32px;
-      letter-spacing: 0.04em;
-      color: var(--clover-dark);
-    }
-
-    header.app-header p {
-      margin: 0;
-      color: var(--text-muted);
-    }
-
-    .timer-display {
-      font-size: 28px;
-      font-weight: 600;
-      color: var(--clover-medium);
-      padding: 8px 20px;
-      border-radius: 999px;
-      background: linear-gradient(135deg, rgba(62, 157, 92, 0.18), rgba(36, 97, 63, 0.05));
-      box-shadow: inset 0 0 0 1px rgba(36, 97, 63, 0.15);
-    }
-
-    .board-section {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 18px;
-    }
-
-    .outer-plate {
-      transition: transform 0.5s ease;
-      transform-origin: center center;
-      display: inline-block;
-      padding: 24px;
-      background: var(--clover-mist);
-      border-radius: 32px;
-      box-shadow: inset 0 0 0 1px rgba(36, 97, 63, 0.08), 0 18px 35px rgba(36, 97, 63, 0.16);
-    }
-
-    .grid-container {
-      position: relative;
-      display: grid;
-      grid-template-columns: 1fr auto 1fr;
-      grid-template-rows: 1fr auto 1fr;
-      align-items: center;
-      justify-items: center;
-      gap: 12px;
-    }
-
-    .hint-input {
-      box-sizing: border-box;
-      text-align: center;
-      margin: 0;
-      padding: 10px 12px;
-      font-size: 16px;
-      border: 1px solid rgba(36, 97, 63, 0.25);
-      border-radius: 14px;
-      background-color: rgba(255, 255, 255, 0.9);
-      color: var(--text-main);
-      box-shadow: inset 0 1px 4px rgba(36, 97, 63, 0.12);
-      transition: border-color 0.2s ease, box-shadow 0.2s ease;
-      min-width: 220px;
-    }
-
-    .hint-input:focus {
-      outline: none;
-      border-color: var(--clover-medium);
-      box-shadow: 0 0 0 3px rgba(62, 157, 92, 0.2);
-    }
-
-    .top-hint {
-      grid-column: 2;
-      grid-row: 1;
-      width: 320px;
-    }
-
-    .bottom-hint {
-      grid-column: 2;
-      grid-row: 3;
-      width: 320px;
-      transform: rotate(180deg);
-    }
-
-    .left-hint {
-      grid-column: 1;
-      grid-row: 2;
-      writing-mode: vertical-rl;
-      transform: rotate(180deg);
-      height: 320px;
-    }
-
-    .right-hint {
-      grid-column: 3;
-      grid-row: 2;
-      writing-mode: vertical-rl;
-      height: 320px;
-    }
-
-    .grid {
-      grid-column: 2;
-      grid-row: 2;
-      display: grid;
-      grid-template-columns: repeat(2, 160px);
-      grid-template-rows: repeat(2, 160px);
-      border-radius: 28px;
-      border: 2px dashed rgba(36, 97, 63, 0.3);
-      padding: 6px;
-      background: rgba(255, 255, 255, 0.6);
-    }
-
-    .grid-cell {
-      width: 160px;
-      height: 160px;
-      border-radius: 18px;
-      border: 1px dashed rgba(36, 97, 63, 0.2);
-    }
-
-    .card {
-      width: 160px;
-      height: 160px;
-      display: grid;
-      grid-template-areas:
-        "top top"
-        "left right"
-        "bottom bottom";
-      position: absolute;
-      background: linear-gradient(145deg, rgba(255, 255, 255, 0.95), rgba(223, 245, 224, 0.9));
-      border: 2px solid rgba(36, 97, 63, 0.25);
-      border-radius: 20px;
-      cursor: grab;
-      transition: transform 0.3s, border 0.3s, box-shadow 0.3s;
-      z-index: 10;
-      touch-action: none;
-      box-shadow: 0 18px 35px rgba(36, 97, 63, 0.14);
-    }
-
-    .card.selected {
-      border-color: var(--clover-medium);
-      box-shadow: 0 20px 40px rgba(58, 141, 87, 0.3);
-    }
-
-    .side {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 18px;
-      font-weight: 600;
-      color: var(--text-main);
-      text-transform: capitalize;
-      padding: 6px;
-    }
-
-    .top {
-      grid-area: top;
-    }
-
-    .right {
-      grid-area: right;
-      transform: rotate(90deg);
-    }
-
-    .bottom {
-      grid-area: bottom;
-      transform: rotate(180deg);
-    }
-
-    .left {
-      grid-area: left;
-      transform: rotate(270deg);
-    }
-
-    .card-rotate-controls {
-      display: flex;
-      gap: 16px;
-      justify-content: center;
-    }
-
-    .card-rotate-controls.hidden {
-      display: none;
-    }
-
-    .card-rotate-controls button {
-      width: 56px;
-      height: 56px;
-      border-radius: 16px;
-      font-size: 26px;
-      padding: 0;
-    }
-
-    .controls {
-      display: flex;
-      flex-direction: column;
-      gap: 14px;
-      align-self: start;
-    }
-
-    button {
-      padding: 14px 18px;
-      font-size: 16px;
-      font-weight: 600;
-      border: none;
-      border-radius: 14px;
-      background: linear-gradient(135deg, var(--clover-medium), var(--clover-dark));
-      color: #ffffff;
-      cursor: pointer;
-      transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
-      box-shadow: 0 12px 24px rgba(36, 97, 63, 0.22);
-    }
-
-    button:hover {
-      transform: translateY(-1px);
-      filter: brightness(1.05);
-    }
-
-    button:active {
-      transform: translateY(0);
-      box-shadow: 0 8px 16px rgba(36, 97, 63, 0.28);
-    }
-
-    button.secondary {
-      background: rgba(36, 97, 63, 0.08);
-      color: var(--clover-dark);
-      box-shadow: none;
-      border: 1px solid rgba(36, 97, 63, 0.2);
-    }
-
-    button.secondary:hover {
-      filter: none;
-      background: rgba(36, 97, 63, 0.14);
-    }
-
-    .modal {
-      position: fixed;
-      inset: 0;
-      background: rgba(14, 36, 22, 0.55);
-      backdrop-filter: blur(2px);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 24px;
-      z-index: 1000;
-    }
-
-    .modal.hidden {
-      display: none;
-    }
-
-    .modal-content {
-      background: rgba(255, 255, 255, 0.95);
-      border-radius: 24px;
-      padding: 32px;
-      width: min(520px, 100%);
-      display: flex;
-      flex-direction: column;
-      gap: 18px;
-      box-shadow: 0 24px 50px rgba(14, 36, 22, 0.32);
-    }
-
-    .modal-content h2 {
-      margin: 0;
-      font-size: 24px;
-      color: var(--clover-dark);
-    }
-
-    .modal-content p {
-      margin: 0;
-      color: var(--text-muted);
-      line-height: 1.5;
-    }
-
-    textarea {
-      width: 100%;
-      min-height: 140px;
-      border-radius: 16px;
-      border: 1px solid rgba(36, 97, 63, 0.2);
-      padding: 16px;
-      font-size: 15px;
-      font-family: inherit;
-      resize: vertical;
-      background: rgba(255, 255, 255, 0.92);
-      color: var(--text-main);
-    }
-
-    .modal-actions {
-      display: flex;
-      gap: 12px;
-      flex-wrap: wrap;
-    }
-
-    .modal-actions button {
-      flex: 1;
-      min-width: 140px;
-    }
-
-    #startGameContent {
-      align-items: center;
-      text-align: center;
-    }
-
-    #startGameContent.hidden {
-      display: none;
-    }
-
-    @media (max-width: 980px) {
       main.app-shell {
-        grid-template-columns: 1fr;
+        width: min(1200px, 100%);
+        background: var(--surface-glass);
+        border-radius: 28px;
+        box-shadow: 0 28px 65px rgba(31, 90, 55, 0.22);
+        backdrop-filter: blur(8px);
+        padding: 32px;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 240px;
+        gap: 32px;
       }
-    }
-  </style>
-</head>
 
-<body>
-  <main class="app-shell">
-    <header class="app-header">
-      <h1>So Clover</h1>
-      <p>Create your hints, then lock them in for the greenest game night.</p>
-      <div id="timerDisplay" class="timer-display">00:00</div>
-    </header>
+      header.app-header {
+        grid-column: 1 / -1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 12px;
+        text-align: center;
+      }
 
-    <section class="board-section">
-      <div class="outer-plate" id="outerPlate">
-        <div class="grid-container" id="plateContainer">
-          <input type="text" class="hint-input top-hint" placeholder="Top Hint" />
-          <div class="grid" id="grid">
-            <div class="grid-cell" data-row="0" data-col="0"></div>
-            <div class="grid-cell" data-row="0" data-col="1"></div>
-            <div class="grid-cell" data-row="1" data-col="0"></div>
-            <div class="grid-cell" data-row="1" data-col="1"></div>
-          </div>
-          <input type="text" class="hint-input bottom-hint" placeholder="Bottom Hint" />
-          <input type="text" class="hint-input left-hint" placeholder="Left Hint" />
-          <input type="text" class="hint-input right-hint" placeholder="Right Hint" />
+      header.app-header h1 {
+        margin: 0;
+        font-size: 34px;
+        color: var(--clover-deep);
+        letter-spacing: 0.05em;
+      }
 
-          <div id="card1" class="card">
-            <div class="side top">Top</div>
-            <div class="side right">Right</div>
-            <div class="side bottom">Bottom</div>
-            <div class="side left">Left</div>
+      header.app-header p {
+        margin: 0;
+        color: var(--ink-muted);
+      }
+
+      .timer-display {
+        font-size: 28px;
+        font-weight: 600;
+        color: var(--clover-forest);
+        padding: 8px 24px;
+        border-radius: 999px;
+        background: linear-gradient(135deg, rgba(63, 155, 91, 0.18), rgba(31, 90, 55, 0.06));
+        box-shadow: inset 0 0 0 1px rgba(31, 90, 55, 0.18);
+        transition: opacity 0.3s ease;
+      }
+
+      .timer-display.hidden {
+        opacity: 0;
+        visibility: hidden;
+      }
+
+      .entry-screen {
+        grid-column: 1 / -1;
+        display: flex;
+        justify-content: center;
+        gap: 16px;
+        padding: 32px 0;
+      }
+
+      .entry-screen.hidden {
+        display: none;
+      }
+
+      .game-screen {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 220px;
+        gap: 32px;
+      }
+
+      .game-screen.hidden {
+        display: none;
+      }
+
+      #gameStage {
+        position: relative;
+        min-height: 620px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 28px;
+      }
+
+      .board-wrapper {
+        position: relative;
+        width: 420px;
+        height: 420px;
+        display: grid;
+        place-items: center;
+        transition: transform 0.4s ease;
+      }
+
+      .board-frame {
+        position: relative;
+        width: 360px;
+        height: 360px;
+        background: linear-gradient(145deg, rgba(244, 251, 245, 0.92), rgba(229, 247, 231, 0.8));
+        border-radius: 36px;
+        box-shadow: inset 0 0 0 1px rgba(31, 90, 55, 0.14), 0 30px 60px rgba(31, 90, 55, 0.18);
+        display: grid;
+        place-items: center;
+        padding: 32px;
+      }
+
+      .hint-label {
+        position: absolute;
+        font-weight: 600;
+        font-size: 18px;
+        color: var(--ink-strong);
+        text-align: center;
+        text-transform: capitalize;
+        max-width: 220px;
+      }
+
+      .hint-label.top { top: -48px; left: 50%; transform: translateX(-50%); }
+      .hint-label.bottom { bottom: -48px; left: 50%; transform: translateX(-50%); }
+      .hint-label.left { left: -48px; top: 50%; transform: translateY(-50%) rotate(-90deg); transform-origin: center; }
+      .hint-label.right { right: -48px; top: 50%; transform: translateY(-50%) rotate(90deg); transform-origin: center; }
+
+      .grid {
+        width: 296px;
+        height: 296px;
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        grid-template-rows: repeat(2, 1fr);
+        gap: 12px;
+        position: relative;
+      }
+
+      .grid-cell {
+        border-radius: 22px;
+        border: 2px dashed rgba(31, 90, 55, 0.25);
+        background: rgba(244, 251, 245, 0.65);
+        position: relative;
+      }
+
+      .cards-layer {
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        z-index: 12;
+      }
+
+      .card {
+        width: 148px;
+        height: 148px;
+        border-radius: 26px;
+        position: absolute;
+        left: 0;
+        top: 0;
+        display: grid;
+        grid-template-areas:
+          "top top"
+          "left right"
+          "bottom bottom";
+        background: radial-gradient(circle at center, #ffffff 0%, #f2faee 45%, rgba(49, 130, 78, 0.65) 100%);
+        border: 2px solid rgba(31, 90, 55, 0.28);
+        box-shadow: 0 20px 42px rgba(31, 90, 55, 0.22);
+        cursor: grab;
+        transition: box-shadow 0.2s ease, border 0.2s ease;
+        pointer-events: auto;
+        touch-action: none;
+        z-index: 10;
+      }
+
+      .card.locked {
+        cursor: default;
+        pointer-events: none;
+      }
+
+      .card.selected {
+        border-color: var(--clover-fern);
+        box-shadow: 0 24px 52px rgba(63, 155, 91, 0.35);
+      }
+
+      .card .side {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 6px;
+        font-weight: 600;
+        font-size: 16px;
+        color: var(--ink-strong);
+        text-transform: capitalize;
+      }
+
+      .side.top { grid-area: top; }
+      .side.right { grid-area: right; transform: rotate(90deg); }
+      .side.bottom { grid-area: bottom; transform: rotate(180deg); }
+      .side.left { grid-area: left; transform: rotate(270deg); }
+
+      .card.status-red { border-color: var(--error-red); box-shadow: 0 20px 42px rgba(214, 70, 70, 0.35); }
+      .card.status-orange { border-color: var(--error-orange); box-shadow: 0 20px 42px rgba(242, 140, 40, 0.35); }
+      .card.status-yellow { border-color: var(--error-yellow); box-shadow: 0 20px 42px rgba(242, 194, 40, 0.35); }
+      .card.status-green { border-color: var(--success-green); box-shadow: 0 24px 52px rgba(42, 157, 84, 0.4); }
+
+      .card-rotate-controls {
+        display: flex;
+        justify-content: center;
+        gap: 18px;
+      }
+
+      .card-rotate-controls.hidden {
+        display: none;
+      }
+
+      .card-rotate-controls button {
+        width: 60px;
+        height: 60px;
+        border-radius: 18px;
+        font-size: 28px;
+        padding: 0;
+      }
+
+      .store-area {
+        width: 100%;
+        position: relative;
+        height: 172px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .store-track {
+        position: relative;
+        width: min(720px, 100%);
+        height: 148px;
+      }
+
+      .store-slot {
+        position: absolute;
+        top: 0;
+        width: 148px;
+        height: 148px;
+        border: 2px dashed rgba(31, 90, 55, 0.2);
+        border-radius: 26px;
+        background: rgba(244, 251, 245, 0.55);
+      }
+
+      .legend {
+        width: 100%;
+        display: flex;
+        justify-content: center;
+        gap: 18px;
+        font-size: 14px;
+        color: var(--ink-muted);
+      }
+
+      .legend.hidden {
+        display: none;
+      }
+
+      .legend span {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .legend .swatch {
+        width: 18px;
+        height: 18px;
+        border-radius: 6px;
+      }
+
+      .controls-column {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        align-self: flex-start;
+      }
+
+      .controls-column button {
+        width: 100%;
+      }
+
+      button {
+        padding: 15px 20px;
+        font-size: 16px;
+        font-weight: 600;
+        border: none;
+        border-radius: 16px;
+        color: #ffffff;
+        cursor: pointer;
+        background: linear-gradient(135deg, var(--clover-fern), var(--clover-deep));
+        box-shadow: 0 16px 32px rgba(31, 90, 55, 0.28);
+        transition: transform 0.18s ease, box-shadow 0.18s ease, filter 0.18s ease;
+      }
+
+      button:hover {
+        transform: translateY(-1px);
+        filter: brightness(1.05);
+      }
+
+      button:active {
+        transform: translateY(0);
+        box-shadow: 0 10px 22px rgba(31, 90, 55, 0.32);
+      }
+
+      button.secondary {
+        background: rgba(31, 90, 55, 0.1);
+        color: var(--clover-deep);
+        box-shadow: none;
+        border: 1px solid rgba(31, 90, 55, 0.2);
+      }
+
+      button.secondary:hover {
+        filter: none;
+        background: rgba(31, 90, 55, 0.16);
+      }
+
+      .modal {
+        position: fixed;
+        inset: 0;
+        background: rgba(17, 40, 25, 0.58);
+        backdrop-filter: blur(3px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 24px;
+        z-index: 1000;
+      }
+
+      .modal.hidden {
+        display: none;
+      }
+
+      .modal-content {
+        background: rgba(255, 255, 255, 0.96);
+        border-radius: 28px;
+        padding: 32px;
+        width: min(540px, 100%);
+        display: flex;
+        flex-direction: column;
+        gap: 18px;
+        box-shadow: 0 32px 68px rgba(17, 40, 25, 0.32);
+      }
+
+      .modal-content h2 {
+        margin: 0;
+        font-size: 26px;
+        color: var(--clover-deep);
+      }
+
+      .modal-content p {
+        margin: 0;
+        color: var(--ink-muted);
+        line-height: 1.5;
+      }
+
+      textarea, input[type="text"] {
+        width: 100%;
+        border-radius: 16px;
+        border: 1px solid rgba(31, 90, 55, 0.24);
+        padding: 16px;
+        font-size: 16px;
+        font-family: inherit;
+        resize: vertical;
+        background: rgba(255, 255, 255, 0.92);
+        color: var(--ink-strong);
+      }
+
+      textarea:focus, input[type="text"]:focus {
+        outline: none;
+        border-color: var(--clover-fern);
+        box-shadow: 0 0 0 3px rgba(63, 155, 91, 0.22);
+      }
+
+      .modal-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+      }
+
+      .modal-actions button {
+        flex: 1;
+        min-width: 160px;
+      }
+
+      .pair-display {
+        background: rgba(229, 247, 231, 0.65);
+        border-radius: 18px;
+        padding: 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        border: 1px solid rgba(31, 90, 55, 0.14);
+      }
+
+      .pair-display strong {
+        font-size: 18px;
+        color: var(--clover-forest);
+      }
+
+      .pair-navigation {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+      }
+
+      .pair-navigation button {
+        flex: 1;
+        min-width: 140px;
+      }
+
+      .pair-progress {
+        text-align: center;
+        color: var(--ink-muted);
+        font-size: 14px;
+      }
+
+      @media (max-width: 1080px) {
+        main.app-shell {
+          grid-template-columns: 1fr;
+        }
+
+        .game-screen {
+          grid-template-columns: 1fr;
+        }
+
+        .controls-column {
+          flex-direction: row;
+          flex-wrap: wrap;
+        }
+
+        .controls-column button {
+          flex: 1;
+          min-width: 200px;
+        }
+
+        .board-wrapper {
+          width: 360px;
+          height: 360px;
+        }
+
+        .board-frame {
+          width: 320px;
+          height: 320px;
+          padding: 24px;
+        }
+
+        .grid {
+          width: 260px;
+          height: 260px;
+        }
+
+        .card {
+          width: 132px;
+          height: 132px;
+        }
+
+        .store-track {
+          width: min(560px, 100%);
+        }
+      }
+
+      @media (max-width: 640px) {
+        body {
+          padding: 16px;
+        }
+
+        main.app-shell {
+          padding: 24px;
+        }
+
+        .board-wrapper {
+          width: 320px;
+          height: 320px;
+        }
+
+        .board-frame {
+          width: 280px;
+          height: 280px;
+          padding: 18px;
+        }
+
+        .grid {
+          width: 220px;
+          height: 220px;
+        }
+
+        .card {
+          width: 116px;
+          height: 116px;
+        }
+
+        .hint-label.top { top: -40px; }
+        .hint-label.bottom { bottom: -40px; }
+        .hint-label.left, .hint-label.right { left: -36px; right: -36px; }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="app-shell">
+      <header class="app-header">
+        <h1>So Clover</h1>
+        <p>Craft clever hints, align the cards, and let the clover guide your team.</p>
+        <div id="timerDisplay" class="timer-display hidden">00:00</div>
+      </header>
+
+      <section id="entryScreen" class="entry-screen">
+        <button id="quickPlayButton" type="button">Quick Play</button>
+        <button id="customPlayButton" type="button">Play with Custom Vocabulary</button>
+      </section>
+
+      <section id="gameScreen" class="game-screen hidden">
+        <div id="gameStage">
+          <div class="board-wrapper">
+            <div id="boardFrame" class="board-frame">
+              <div class="grid" id="grid">
+                <div class="grid-cell" data-zone="grid-0-0"></div>
+                <div class="grid-cell" data-zone="grid-0-1"></div>
+                <div class="grid-cell" data-zone="grid-1-0"></div>
+                <div class="grid-cell" data-zone="grid-1-1"></div>
+              </div>
+            </div>
+            <div class="hint-label top" id="hintTop"></div>
+            <div class="hint-label right" id="hintRight"></div>
+            <div class="hint-label bottom" id="hintBottom"></div>
+            <div class="hint-label left" id="hintLeft"></div>
           </div>
-          <div id="card2" class="card">
-            <div class="side top">Top</div>
-            <div class="side right">Right</div>
-            <div class="side bottom">Bottom</div>
-            <div class="side left">Left</div>
+
+          <div id="cardLayer" class="cards-layer"></div>
+
+          <div class="card-rotate-controls hidden" id="cardRotateControls">
+            <button type="button" data-rotate="90">↻</button>
+            <button type="button" data-rotate="-90">↺</button>
           </div>
-          <div id="card3" class="card">
-            <div class="side top">Top</div>
-            <div class="side right">Right</div>
-            <div class="side bottom">Bottom</div>
-            <div class="side left">Left</div>
+
+          <div class="store-area">
+            <div class="store-track" id="storeTrack"></div>
           </div>
-          <div id="card4" class="card">
-            <div class="side top">Top</div>
-            <div class="side right">Right</div>
-            <div class="side bottom">Bottom</div>
-            <div class="side left">Left</div>
+
+          <div class="legend hidden" id="feedbackLegend">
+            <span><span class="swatch" style="background: var(--success-green);"></span>Correct position & orientation</span>
+            <span><span class="swatch" style="background: var(--error-yellow);"></span>Correct position, rotate again</span>
+            <span><span class="swatch" style="background: var(--error-orange);"></span>Move to correct spot</span>
+            <span><span class="swatch" style="background: var(--error-red);"></span>Move & rotate</span>
           </div>
         </div>
-      </div>
 
-      <div id="cardRotateControls" class="card-rotate-controls hidden">
-        <button type="button" onclick="rotateSelectedCard(90)">↻</button>
-        <button type="button" onclick="rotateSelectedCard(-90)">↺</button>
-      </div>
-    </section>
+        <aside class="controls-column" id="controlsColumn">
+          <button id="openHintModal" type="button">Edit Hints</button>
+          <button id="rotateGridButton" type="button">Rotate Grid</button>
+          <button id="confirmHintsButton" type="button">Confirm Hints</button>
+          <button id="checkAnswerButton" type="button" class="secondary">Check Answer</button>
+          <button id="shareButton" type="button" class="secondary">Share Game</button>
+        </aside>
+      </section>
+    </main>
 
-    <aside class="controls">
-      <button id="openVocabModal" type="button">Custom Vocabulary</button>
-      <button type="button" onclick="rotateEntireGrid()">Rotate Grid</button>
-      <button type="button" onclick="handleFinishHintClick()">Finish Hint</button>
-      <button type="button" onclick="shareGame()">Share Game</button>
-    </aside>
-  </main>
-
-  <div id="vocabModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="vocabTitle">
-    <div class="modal-content">
-      <h2 id="vocabTitle">Custom Vocabulary</h2>
-      <p>Enter up to 16 words separated by commas. We'll fill in any empty spots with clover-approved words.</p>
-      <textarea id="textInput" placeholder="Example: apple, car, book, ..."></textarea>
-      <div class="modal-actions">
-        <button type="button" onclick="loadVoc()">Load Vocabulary</button>
-        <button type="button" class="secondary" onclick="closeVocabModal()">Close</button>
-      </div>
-    </div>
-  </div>
-
-  <div id="finishModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="finishTitle">
-    <div class="modal-content">
-      <div id="finishConfirmContent">
-        <h2 id="finishTitle">Ready to lock in your hints?</h2>
-        <p>Once you confirm, the cards will shuffle into place. After that, hit <strong>Start Game</strong> to begin the timer.</p>
+    <div id="vocabModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="vocabTitle">
+      <div class="modal-content">
+        <h2 id="vocabTitle">Custom Vocabulary</h2>
+        <p>Enter at least 4 and up to 16 words separated by commas. We'll sprinkle in clover words to complete the deck.</p>
+        <textarea id="vocabInput" placeholder="Example: apple, car, book, ..."></textarea>
         <div class="modal-actions">
-          <button type="button" onclick="confirmFinishHint()">Confirm</button>
-          <button type="button" class="secondary" onclick="closeFinishModal()">Cancel</button>
+          <button type="button" id="loadVocabButton">Load Vocabulary</button>
+          <button type="button" class="secondary" id="closeVocabButton">Cancel</button>
         </div>
       </div>
-      <div id="startGameContent" class="hidden">
-        <p>Your hints are set. Take a breath, then start the round when everyone is ready.</p>
-        <button id="startGameButton" type="button" onclick="startGameFromModal()">Start Game</button>
+    </div>
+
+    <div id="hintModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="hintModalTitle">
+      <div class="modal-content">
+        <h2 id="hintModalTitle">Create Your Hints</h2>
+        <p>Review each pair and write a hint that links the two words. Use the navigation to move between pairs.</p>
+        <div class="pair-display">
+          <strong id="pairHeading"></strong>
+          <div id="pairWords"></div>
+        </div>
+        <input id="hintInput" type="text" placeholder="Type your hint" />
+        <div class="pair-navigation">
+          <button type="button" class="secondary" id="prevPairButton">Previous</button>
+          <button type="button" id="nextPairButton">Next</button>
+        </div>
+        <div class="pair-progress" id="pairProgress"></div>
+        <button type="button" id="finishHintsButton" class="hidden">Finish Hints</button>
       </div>
     </div>
-  </div>
 
-  <script>
-    /*******************************************************
-     * GLOBALS
-     *******************************************************/
-    let selectedCard = null;
-    let gridRotation = 0;
-    let timerInterval = null;
-    let timerStartTime = null;
+    <div id="confirmModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="confirmTitle">
+      <div class="modal-content">
+        <div id="confirmContent">
+          <h2 id="confirmTitle">Lock in these hints?</h2>
+          <p>After confirming you'll prepare the board. Once everyone is ready, start the game to begin the timer.</p>
+          <div class="modal-actions">
+            <button type="button" id="confirmHintsAction">Confirm</button>
+            <button type="button" class="secondary" id="cancelConfirmButton">Cancel</button>
+          </div>
+        </div>
+        <div id="startContent" class="hidden">
+          <p>Hints set! Shuffle the cards, gather the team, and press <strong>Start Game</strong> when ready.</p>
+          <button type="button" id="startGameButton">Start Game</button>
+        </div>
+      </div>
+    </div>
 
-    const cardPositions = {
-      card1: { x: 0, y: 0 },
-      card2: { x: 0, y: 0 },
-      card3: { x: 0, y: 0 },
-      card4: { x: 0, y: 0 }
-    };
+    <div id="messageModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="messageTitle">
+      <div class="modal-content">
+        <h2 id="messageTitle"></h2>
+        <div id="messageBody"></div>
+        <div class="modal-actions" id="messageActions"></div>
+      </div>
+    </div>
 
-    const builtInTW = [
-      "animal", "apple", "arrow", "basket", "beach", "bear", "bird", "book", "bottle", "box",
-      "boy", "branch", "bridge", "butterfly", "button", "cake", "camera", "car", "cat", "chair",
-      "chicken", "child", "church", "circle", "clock", "cloud", "clown", "coat", "corn", "cow",
-      "crowd", "crown", "cup", "deer", "desk", "door", "duck", "egg", "elephant", "eye",
-      "family", "fish", "flag", "flower", "frog", "game", "garden", "gate", "ghost", "giraffe",
-      "girl", "glass", "glove", "grape", "grass", "hat", "hill", "horse", "house", "island",
-      "jewel", "kangaroo", "kite", "lake", "leaf", "lion", "lizard", "man", "map", "moon",
-      "mountain", "mouse", "mouth", "mushroom", "nest", "net", "nose", "ocean", "orange", "owl",
-      "panda", "park", "pen", "pencil", "piano", "pig", "pineapple", "pizza", "planet", "plant",
-      "plate", "rabbit", "rainbow", "ring", "river", "road", "robot", "rock", "rocket", "roof",
-      "room", "rope", "rose", "seed", "shark", "sheep", "shelf", "ship", "shirt", "shoe",
-      "snake", "spider", "spoon", "star", "street", "sun", "table", "tail", "tree", "watch",
-      "water", "whale", "window", "zebra"
-    ];
-
-    /*******************************************************
-     * VOCABULARY MODAL
-     *******************************************************/
-    function openVocabModal() {
-      document.getElementById('vocabModal').classList.remove('hidden');
-      document.getElementById('textInput').focus();
-    }
-
-    function closeVocabModal() {
-      document.getElementById('vocabModal').classList.add('hidden');
-    }
-
-    function loadVoc() {
-      let defaultTW = JSON.parse(JSON.stringify(builtInTW));
-      let inputText = document.getElementById('textInput').value;
-      let inputTW = inputText.split(',').map(s => s.trim());
-
-      inputTW = inputTW.map(item => {
-        if (item === '' && defaultTW.length > 0) {
-          const r = Math.floor(Math.random() * defaultTW.length);
-          const replacement = defaultTW.splice(r, 1)[0];
-          return replacement;
-        }
-        return item;
-      }).filter(Boolean);
-
-      while (inputTW.length < 16 && defaultTW.length > 0) {
-        const r = Math.floor(Math.random() * defaultTW.length);
-        const candidate = defaultTW.splice(r, 1)[0];
-        if (!inputTW.includes(candidate)) {
-          inputTW.push(candidate);
-        }
-      }
-
-      inputTW.sort(() => Math.random() - 0.5);
-
-      const sideSelectors = [
-        "#card1 .top", "#card1 .right", "#card1 .bottom", "#card1 .left",
-        "#card2 .top", "#card2 .right", "#card2 .bottom", "#card2 .left",
-        "#card3 .top", "#card3 .right", "#card3 .bottom", "#card3 .left",
-        "#card4 .top", "#card4 .right", "#card4 .bottom", "#card4 .left"
+    <script>
+      const builtInTW = [
+        "animal", "apple", "arrow", "basket", "beach", "bear", "bird", "book", "bottle", "box",
+        "boy", "branch", "bridge", "butterfly", "button", "cake", "camera", "car", "cat", "chair",
+        "chicken", "child", "church", "circle", "clock", "cloud", "clown", "coat", "corn", "cow",
+        "crowd", "crown", "cup", "deer", "desk", "door", "duck", "egg", "elephant", "eye",
+        "family", "fish", "flag", "flower", "frog", "game", "garden", "gate", "ghost", "giraffe",
+        "girl", "glass", "glove", "grape", "grass", "hat", "hill", "horse", "house", "island",
+        "jewel", "kangaroo", "kite", "lake", "leaf", "lion", "lizard", "man", "map", "moon",
+        "mountain", "mouse", "mouth", "mushroom", "nest", "net", "nose", "ocean", "orange", "owl",
+        "panda", "park", "pen", "pencil", "piano", "pig", "pineapple", "pizza", "planet", "plant",
+        "plate", "rabbit", "rainbow", "ring", "river", "road", "robot", "rock", "rocket", "roof",
+        "room", "rope", "rose", "seed", "shark", "sheep", "shelf", "ship", "shirt", "shoe",
+        "snake", "spider", "spoon", "star", "street", "sun", "table", "tail", "tree", "watch",
+        "water", "whale", "window", "zebra"
       ];
 
-      sideSelectors.forEach((sel, i) => {
-        const el = document.querySelector(sel);
-        if (el) el.textContent = inputTW[i] || "";
-      });
-
-      closeVocabModal();
-    }
-
-    document.getElementById('openVocabModal').addEventListener('click', openVocabModal);
-
-    /*******************************************************
-     * ROTATION + SELECTION
-     *******************************************************/
-    function selectCard(card) {
-      if (selectedCard === card) {
-        return;
-      }
-
-      if (selectedCard) {
-        selectedCard.classList.remove('selected');
-      }
-
-      selectedCard = card;
-      selectedCard.classList.add('selected');
-      updateRotateControlsVisibility(true);
-    }
-
-    function clearSelection() {
-      if (selectedCard) {
-        selectedCard.classList.remove('selected');
-        selectedCard = null;
-      }
-      updateRotateControlsVisibility(false);
-    }
-
-    function updateRotateControlsVisibility(show) {
-      const controls = document.getElementById('cardRotateControls');
-      if (!controls) return;
-      if (show && selectedCard) {
-        controls.classList.remove('hidden');
-      } else {
-        controls.classList.add('hidden');
-      }
-    }
-
-    function rotateSelectedCard(amount) {
-      if (!selectedCard) return;
-      const currentRotation = parseInt(selectedCard.dataset.rotation || '0', 10);
-      const newRotation = currentRotation + amount;
-      selectedCard.style.transform = `rotate(${newRotation}deg)`;
-      selectedCard.dataset.rotation = newRotation;
-    }
-
-    function rotateEntireGrid() {
-      gridRotation += 90;
-      const outerPlate = document.getElementById('outerPlate');
-      outerPlate.style.transform = `rotate(${gridRotation}deg)`;
-      clearSelection();
-    }
-
-    /*******************************************************
-     * FINISH HINT MODAL + TIMER
-     *******************************************************/
-    function handleFinishHintClick() {
-      stopTimer();
-      resetTimerDisplay();
-      resetFinishModalState();
-      document.getElementById('finishModal').classList.remove('hidden');
-      clearSelection();
-    }
-
-    function resetFinishModalState() {
-      document.getElementById('finishConfirmContent').style.display = 'flex';
-      document.getElementById('finishConfirmContent').style.flexDirection = 'column';
-      document.getElementById('startGameContent').classList.add('hidden');
-    }
-
-    function confirmFinishHint() {
-      finalizeBoardSetup();
-      document.getElementById('finishConfirmContent').style.display = 'none';
-      document.getElementById('startGameContent').classList.remove('hidden');
-    }
-
-    function closeFinishModal() {
-      document.getElementById('finishModal').classList.add('hidden');
-      resetFinishModalState();
-    }
-
-    function startGameFromModal() {
-      startTimer();
-      closeFinishModal();
-    }
-
-    function resetTimerDisplay() {
-      document.getElementById('timerDisplay').textContent = '00:00';
-    }
-
-    function startTimer() {
-      stopTimer();
-      timerStartTime = Date.now();
-      updateTimerDisplay();
-      timerInterval = setInterval(updateTimerDisplay, 1000);
-    }
-
-    function stopTimer() {
-      if (timerInterval) {
-        clearInterval(timerInterval);
-        timerInterval = null;
-      }
-      timerStartTime = null;
-    }
-
-    function updateTimerDisplay() {
-      if (!timerStartTime) {
-        resetTimerDisplay();
-        return;
-      }
-      const elapsed = Math.floor((Date.now() - timerStartTime) / 1000);
-      const minutes = String(Math.floor(elapsed / 60)).padStart(2, '0');
-      const seconds = String(elapsed % 60).padStart(2, '0');
-      document.getElementById('timerDisplay').textContent = `${minutes}:${seconds}`;
-    }
-
-    /*******************************************************
-     * SHARE GAME
-     *******************************************************/
-    function shareGame() {
-      const topHint = document.querySelector('.top-hint').value;
-      const bottomHint = document.querySelector('.bottom-hint').value;
-      const leftHint = document.querySelector('.left-hint').value;
-      const rightHint = document.querySelector('.right-hint').value;
-
-      const sideSelectors = [
-        "#card1 .top", "#card1 .right", "#card1 .bottom", "#card1 .left",
-        "#card2 .top", "#card2 .right", "#card2 .bottom", "#card2 .left",
-        "#card3 .top", "#card3 .right", "#card3 .bottom", "#card3 .left",
-        "#card4 .top", "#card4 .right", "#card4 .bottom", "#card4 .left"
-      ];
-      const vocab = sideSelectors.map(sel => {
-        const el = document.querySelector(sel);
-        return el ? el.textContent : '';
-      });
-
-      const params = new URLSearchParams();
-      params.set('topHint', topHint);
-      params.set('bottomHint', bottomHint);
-      params.set('leftHint', leftHint);
-      params.set('rightHint', rightHint);
-      params.set('vocab', vocab.join(','));
-
-      const shareUrl = `${window.location.origin}${window.location.pathname}?${params.toString()}`;
-
-      if (navigator.clipboard && window.isSecureContext) {
-        navigator.clipboard.writeText(shareUrl).then(() => {
-          alert('URL copied to clipboard!');
-        }).catch(err => {
-          console.error('Failed to copy: ', err);
-        });
-      } else {
-        const textArea = document.createElement('textarea');
-        textArea.value = shareUrl;
-        textArea.style.top = '0';
-        textArea.style.left = '0';
-        textArea.style.position = 'fixed';
-        document.body.appendChild(textArea);
-        textArea.focus();
-        textArea.select();
-        try {
-          document.execCommand('copy');
-          alert('URL copied to clipboard!');
-        } catch (err) {
-          console.error('Fallback: Unable to copy', err);
+      const state = {
+        words: [],
+        hints: [],
+        activePairIndex: 0,
+        phase: 'entry',
+        gridRotation: 0,
+        selectedCard: null,
+        cards: {},
+        cardOrder: ['card1', 'card2', 'card3', 'card4'],
+        cardPlacement: {},
+        zoneOccupancy: {},
+        attempts: 0,
+        timerStart: null,
+        elapsedBeforePause: 0,
+        timerInterval: null,
+        solution: {
+          zoneByCard: {
+            card1: 'grid-0-0',
+            card2: 'grid-0-1',
+            card3: 'grid-1-0',
+            card4: 'grid-1-1'
+          },
+          rotationByCard: {
+            card1: 0,
+            card2: 0,
+            card3: 0,
+            card4: 0
+          }
         }
-        document.body.removeChild(textArea);
-      }
-    }
+      };
 
-    /*******************************************************
-     * LOAD GAME STATE
-     *******************************************************/
-    function loadGameFromURL() {
-      const params = new URLSearchParams(window.location.search);
-      const topHint = params.get('topHint');
-      const bottomHint = params.get('bottomHint');
-      const leftHint = params.get('leftHint');
-      const rightHint = params.get('rightHint');
-      if (topHint !== null) document.querySelector('.top-hint').value = topHint;
-      if (bottomHint !== null) document.querySelector('.bottom-hint').value = bottomHint;
-      if (leftHint !== null) document.querySelector('.left-hint').value = leftHint;
-      if (rightHint !== null) document.querySelector('.right-hint').value = rightHint;
+      const cardData = state.cardOrder.map((id) => ({
+        id,
+        el: createCardElement(id)
+      }));
 
-      const vocabParam = params.get('vocab');
-      if (vocabParam) {
-        const vocabArray = vocabParam.split(',');
-        const sideSelectors = [
-          "#card1 .top", "#card1 .right", "#card1 .bottom", "#card1 .left",
-          "#card2 .top", "#card2 .right", "#card2 .bottom", "#card2 .left",
-          "#card3 .top", "#card3 .right", "#card3 .bottom", "#card3 .left",
-          "#card4 .top", "#card4 .right", "#card4 .bottom", "#card4 .left"
-        ];
-        sideSelectors.forEach((sel, i) => {
-          const el = document.querySelector(sel);
-          if (el && vocabArray[i] !== undefined) {
-            el.textContent = vocabArray[i];
+      const cardLayer = document.getElementById('cardLayer');
+      cardData.forEach(({ el }) => cardLayer.appendChild(el));
+
+      const storeTrack = document.getElementById('storeTrack');
+      const storeSlots = [];
+      const storeSlotCount = 4;
+
+      function layoutStoreSlots() {
+        storeTrack.innerHTML = '';
+        storeSlots.length = 0;
+        const trackWidth = storeTrack.clientWidth;
+        const cardWidth = 148;
+        const overlap = cardWidth * 0.5;
+        const totalWidth = overlap * (storeSlotCount - 1) + cardWidth;
+        const startX = Math.max((trackWidth - totalWidth) / 2, 0);
+
+        for (let i = 0; i < storeSlotCount; i++) {
+          const slot = document.createElement('div');
+          slot.className = 'store-slot';
+          const left = startX + i * overlap;
+          slot.style.left = `${left}px`;
+          slot.dataset.zone = `store-${i}`;
+          storeTrack.appendChild(slot);
+          storeSlots.push(slot);
+        }
+
+        state.cardOrder.forEach((cardId) => {
+          const zone = state.cardPlacement[cardId];
+          if (zone && zone.startsWith('store-')) {
+            snapCardToZone(cardId, zone);
           }
         });
       }
-      finalizeBoardSetup();
-    }
 
-    /*******************************************************
-     * CARD DRAGGING + POSITIONING
-     *******************************************************/
-    function enableDragging(card) {
-      let lastX = 0, lastY = 0;
-      const cardId = card.id;
+      layoutStoreSlots();
+      window.addEventListener('resize', layoutStoreSlots);
 
-      card.addEventListener('pointerdown', (e) => {
-        card.style.zIndex = 9999;
-        selectCard(card);
+      function createCardElement(id) {
+        const card = document.createElement('div');
+        card.className = 'card locked';
+        card.id = id;
+        card.dataset.rotation = '0';
+        card.dataset.zone = '';
 
-        lastX = e.clientX;
-        lastY = e.clientY;
+        const sides = ['top', 'right', 'bottom', 'left'];
+        sides.forEach((sideName) => {
+          const side = document.createElement('div');
+          side.className = `side ${sideName}`;
+          side.textContent = sideName;
+          card.appendChild(side);
+        });
 
-        card.setPointerCapture(e.pointerId);
-        card.style.cursor = 'grabbing';
-
-        const onPointerMove = (ev) => {
-          const dxScreen = ev.clientX - lastX;
-          const dyScreen = ev.clientY - lastY;
-
-          const rad = -gridRotation * (Math.PI / 180);
-          const cosA = Math.cos(rad);
-          const sinA = Math.sin(rad);
-
-          const dxLocal = dxScreen * cosA - dyScreen * sinA;
-          const dyLocal = dxScreen * sinA + dyScreen * cosA;
-
-          cardPositions[cardId].x += dxLocal;
-          cardPositions[cardId].y += dyLocal;
-
-          card.style.left = cardPositions[cardId].x + 'px';
-          card.style.top = cardPositions[cardId].y + 'px';
-
-          lastX = ev.clientX;
-          lastY = ev.clientY;
-        };
-
-        const onPointerUp = (ev) => {
-          card.releasePointerCapture(ev.pointerId);
-          card.style.cursor = 'grab';
-          card.removeEventListener('pointermove', onPointerMove);
-          card.removeEventListener('pointerup', onPointerUp);
-          card.style.zIndex = 10;
-        };
-
-        card.addEventListener('pointermove', onPointerMove);
-        card.addEventListener('pointerup', onPointerUp);
-      });
-    }
-
-    function snapToGrid(card, row, col) {
-      const plateRect = document.getElementById('plateContainer').getBoundingClientRect();
-      const gridRect = document.getElementById('grid').getBoundingClientRect();
-      const cellW = 160;
-      const cellH = 160;
-
-      const xScreen = gridRect.left + col * cellW;
-      const yScreen = gridRect.top + row * cellH;
-
-      const xLocal = xScreen - plateRect.left;
-      const yLocal = yScreen - plateRect.top;
-
-      cardPositions[card.id].x = xLocal;
-      cardPositions[card.id].y = yLocal;
-      card.style.left = xLocal + 'px';
-      card.style.top = yLocal + 'px';
-    }
-
-    function finalizeBoardSetup() {
-      gridRotation = 0;
-      const outerPlate = document.getElementById('outerPlate');
-      outerPlate.style.transform = 'rotate(0deg)';
-
-      const cellPositions = [
-        { row: 0, col: 0 },
-        { row: 0, col: 1 },
-        { row: 1, col: 0 },
-        { row: 1, col: 1 },
-      ];
-
-      cellPositions.sort(() => Math.random() - 0.5);
-
-      const cards = [
-        document.getElementById('card1'),
-        document.getElementById('card2'),
-        document.getElementById('card3'),
-        document.getElementById('card4')
-      ];
-
-      cards.forEach((card, index) => {
-        const { row, col } = cellPositions[index];
-        snapToGrid(card, row, col);
-
-        const possibleRotations = [0, 90, 180, 270];
-        const newRotation = possibleRotations[Math.floor(Math.random() * possibleRotations.length)];
-
-        card.dataset.rotation = newRotation;
-        card.style.transform = `rotate(${newRotation}deg)`;
-      });
-
-      clearSelection();
-    }
-
-    /*******************************************************
-     * INITIALIZE
-     *******************************************************/
-    const cards = [
-      document.getElementById('card1'),
-      document.getElementById('card2'),
-      document.getElementById('card3'),
-      document.getElementById('card4')
-    ];
-
-    cards.forEach(enableDragging);
-    cards.forEach((card) => {
-      card.addEventListener('click', () => selectCard(card));
-    });
-
-    function initialSnap() {
-      snapToGrid(cards[0], 0, 0);
-      snapToGrid(cards[1], 0, 1);
-      snapToGrid(cards[2], 1, 0);
-      snapToGrid(cards[3], 1, 1);
-    }
-
-    initialSnap();
-    loadGameFromURL();
-
-    document.addEventListener('click', (event) => {
-      if (!event.target.closest('.card') && !event.target.closest('#cardRotateControls')) {
-        clearSelection();
+        return card;
       }
-    });
-  </script>
-</body>
 
+      function resetCardStatuses() {
+        cardData.forEach(({ el }) => {
+          el.classList.remove('status-red', 'status-orange', 'status-yellow', 'status-green');
+        });
+      }
+
+      const boardShell = document.querySelector('.board-wrapper');
+      const gridCells = Array.from(document.querySelectorAll('.grid-cell'));
+
+      const quickPlayButton = document.getElementById('quickPlayButton');
+      const customPlayButton = document.getElementById('customPlayButton');
+      const entryScreen = document.getElementById('entryScreen');
+      const gameScreen = document.getElementById('gameScreen');
+      const timerDisplay = document.getElementById('timerDisplay');
+      const confirmButton = document.getElementById('confirmHintsButton');
+
+      quickPlayButton.addEventListener('click', () => {
+        prepareGame([...builtInTW]);
+      });
+
+      customPlayButton.addEventListener('click', () => {
+        document.getElementById('vocabModal').classList.remove('hidden');
+        document.getElementById('vocabInput').focus();
+      });
+
+      document.getElementById('closeVocabButton').addEventListener('click', () => {
+        document.getElementById('vocabModal').classList.add('hidden');
+      });
+
+      document.getElementById('loadVocabButton').addEventListener('click', () => {
+        const raw = document.getElementById('vocabInput').value;
+        const words = raw.split(',').map((w) => w.trim()).filter(Boolean);
+        if (words.length < 4) {
+          openMessageModal({
+            title: 'Not enough words',
+            body: '<p>Please provide at least four words to build the deck.</p>',
+            primaryText: 'Got it'
+          });
+          return;
+        }
+        document.getElementById('vocabModal').classList.add('hidden');
+        prepareGame(words);
+      });
+
+      function prepareGame(baseWords) {
+        resetGameState();
+        const pool = [...baseWords];
+        while (pool.length < 16) {
+          const candidate = builtInTW[Math.floor(Math.random() * builtInTW.length)];
+          if (!pool.includes(candidate)) {
+            pool.push(candidate);
+          }
+        }
+        shuffleArray(pool);
+        const selected = pool.slice(0, 16);
+        state.words = selected;
+        assignWordsToCards(selected);
+        entryScreen.classList.add('hidden');
+        gameScreen.classList.add('hidden');
+        document.getElementById('openHintModal').disabled = false;
+        confirmButton.disabled = false;
+        confirmButton.dataset.confirmed = 'false';
+        document.getElementById('checkAnswerButton').disabled = true;
+        document.getElementById('shareButton').disabled = false;
+        state.phase = 'hint';
+        timerDisplay.classList.add('hidden');
+        document.getElementById('feedbackLegend').classList.add('hidden');
+        openHintCreation();
+        snapCardsToSolution();
+      }
+
+      function resetGameState() {
+        disableCardInteractions();
+        state.hints = [];
+        state.activePairIndex = 0;
+        state.gridRotation = 0;
+        state.selectedCard = null;
+        state.cardPlacement = {};
+        state.zoneOccupancy = {};
+        state.attempts = 0;
+        state.timerStart = null;
+        state.elapsedBeforePause = 0;
+        clearInterval(state.timerInterval);
+        state.timerInterval = null;
+        timerDisplay.textContent = '00:00';
+        boardShell.style.transform = 'rotate(0deg)';
+        resetCardStatuses();
+        state.cards = {};
+        cardData.forEach(({ el }) => {
+          el.dataset.rotation = '0';
+          el.dataset.zone = '';
+          el.style.transform = 'translate(0px, 0px) rotate(0deg)';
+          el.classList.add('locked');
+          el.classList.remove('selected');
+          state.cards[el.id] = {
+            rotation: 0,
+            x: 0,
+            y: 0
+          };
+        });
+        document.getElementById('cardRotateControls').classList.add('hidden');
+      }
+
+      function assignWordsToCards(words) {
+        const selectors = [
+          '#card1 .top', '#card1 .right', '#card1 .bottom', '#card1 .left',
+          '#card2 .top', '#card2 .right', '#card2 .bottom', '#card2 .left',
+          '#card3 .top', '#card3 .right', '#card3 .bottom', '#card3 .left',
+          '#card4 .top', '#card4 .right', '#card4 .bottom', '#card4 .left'
+        ];
+        selectors.forEach((sel, index) => {
+          const el = document.querySelector(sel);
+          if (el) {
+            el.textContent = words[index] || '';
+          }
+        });
+      }
+
+      function shuffleArray(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [array[i], array[j]] = [array[j], array[i]];
+        }
+      }
+
+      function openHintCreation() {
+        state.hints = buildHintSkeleton();
+        state.activePairIndex = 0;
+        updateHintModal();
+        document.getElementById('hintModal').classList.remove('hidden');
+        document.getElementById('hintInput').focus();
+      }
+
+      function buildHintSkeleton() {
+        const topPair = [
+          document.querySelector('#card1 .top').textContent,
+          document.querySelector('#card2 .top').textContent
+        ];
+        const rightPair = [
+          document.querySelector('#card2 .right').textContent,
+          document.querySelector('#card4 .right').textContent
+        ];
+        const bottomPair = [
+          document.querySelector('#card3 .bottom').textContent,
+          document.querySelector('#card4 .bottom').textContent
+        ];
+        const leftPair = [
+          document.querySelector('#card1 .left').textContent,
+          document.querySelector('#card3 .left').textContent
+        ];
+
+        return [
+          { direction: 'Top', words: topPair, hint: '' },
+          { direction: 'Right', words: rightPair, hint: '' },
+          { direction: 'Bottom', words: bottomPair, hint: '' },
+          { direction: 'Left', words: leftPair, hint: '' }
+        ];
+      }
+
+      function updateHintModal() {
+        const pair = state.hints[state.activePairIndex];
+        document.getElementById('pairHeading').textContent = `${pair.direction} Pair`;
+        document.getElementById('pairWords').textContent = `${pair.words[0]} • ${pair.words[1]}`;
+        document.getElementById('hintInput').value = pair.hint;
+        document.getElementById('pairProgress').textContent = `Hint ${state.activePairIndex + 1} of ${state.hints.length}`;
+        toggleFinishButton();
+      }
+
+      function toggleFinishButton() {
+        const allFilled = state.hints.every((item) => item.hint.trim() !== '');
+        const finishButton = document.getElementById('finishHintsButton');
+        if (allFilled) {
+          finishButton.classList.remove('hidden');
+        } else {
+          finishButton.classList.add('hidden');
+        }
+      }
+
+      document.getElementById('prevPairButton').addEventListener('click', () => {
+        saveHintDraft();
+        state.activePairIndex = (state.activePairIndex - 1 + state.hints.length) % state.hints.length;
+        updateHintModal();
+        document.getElementById('hintInput').focus();
+      });
+
+      document.getElementById('nextPairButton').addEventListener('click', () => {
+        saveHintDraft();
+        state.activePairIndex = (state.activePairIndex + 1) % state.hints.length;
+        updateHintModal();
+        document.getElementById('hintInput').focus();
+      });
+
+      document.getElementById('hintInput').addEventListener('input', () => {
+        saveHintDraft(false);
+        toggleFinishButton();
+      });
+
+      function saveHintDraft(updateValue = true) {
+        const input = document.getElementById('hintInput');
+        if (updateValue) {
+          state.hints[state.activePairIndex].hint = input.value.trim();
+        } else {
+          state.hints[state.activePairIndex].hint = input.value;
+        }
+      }
+
+      document.getElementById('finishHintsButton').addEventListener('click', () => {
+        saveHintDraft();
+        const allFilled = state.hints.every((item) => item.hint.trim() !== '');
+        if (!allFilled) {
+          openMessageModal({
+            title: 'Hints incomplete',
+            body: '<p>Please provide a hint for every pair before continuing.</p>',
+            primaryText: 'Okay'
+          });
+          return;
+        }
+        const previousPhase = state.phase;
+        document.getElementById('hintModal').classList.add('hidden');
+        applyHintsToBoard();
+        if (previousPhase === 'hint') {
+          gameScreen.classList.remove('hidden');
+          layoutStoreSlots();
+          snapCardsToSolution();
+          state.phase = 'setup';
+        } else if (previousPhase === 'setup') {
+          snapCardsToSolution();
+        } else {
+          state.phase = previousPhase;
+        }
+      });
+
+      document.getElementById('openHintModal').addEventListener('click', () => {
+        if (state.phase === 'entry') return;
+        document.getElementById('hintModal').classList.remove('hidden');
+        document.getElementById('hintInput').focus();
+        updateHintModal();
+      });
+
+      function applyHintsToBoard() {
+        document.getElementById('hintTop').textContent = state.hints[0].hint;
+        document.getElementById('hintRight').textContent = state.hints[1].hint;
+        document.getElementById('hintBottom').textContent = state.hints[2].hint;
+        document.getElementById('hintLeft').textContent = state.hints[3].hint;
+      }
+
+      function snapCardsToSolution() {
+        state.cardOrder.forEach((cardId) => {
+          const zoneId = state.solution.zoneByCard[cardId];
+          snapCardToZone(cardId, zoneId);
+          const card = document.getElementById(cardId);
+          card.classList.add('locked');
+        });
+      }
+
+      function getStageRect() {
+        return document.getElementById('gameStage').getBoundingClientRect();
+      }
+
+      function snapCardToZone(cardId, zoneId) {
+        const card = document.getElementById(cardId);
+        if (!state.cards[cardId]) {
+          state.cards[cardId] = { rotation: 0, x: 0, y: 0 };
+        }
+        const prevZone = state.cardPlacement[cardId];
+        if (prevZone && state.zoneOccupancy[prevZone] === cardId) {
+          state.zoneOccupancy[prevZone] = null;
+        }
+
+        const zoneEl = document.querySelector(`[data-zone="${zoneId}"]`);
+        if (!zoneEl) return;
+
+        if (state.zoneOccupancy[zoneId] && state.zoneOccupancy[zoneId] !== cardId) {
+          const displaced = state.zoneOccupancy[zoneId];
+          const fallback = findOpenStoreSlot();
+          if (fallback) {
+            snapCardToZone(displaced, fallback.dataset.zone);
+          } else if (prevZone) {
+            snapCardToZone(displaced, prevZone);
+          } else {
+            return;
+          }
+        }
+
+        const stageRect = getStageRect();
+        const zoneRect = zoneEl.getBoundingClientRect();
+        const x = zoneRect.left - stageRect.left;
+        const y = zoneRect.top - stageRect.top;
+
+        state.cardPlacement[cardId] = zoneId;
+        state.zoneOccupancy[zoneId] = cardId;
+        state.cards[cardId].x = x;
+        state.cards[cardId].y = y;
+
+        card.dataset.zone = zoneId;
+        applyCardTransform(cardId);
+      }
+
+      function applyCardTransform(cardId) {
+        const card = document.getElementById(cardId);
+        const { x, y, rotation } = state.cards[cardId];
+        const zoneId = state.cardPlacement[cardId] || '';
+        const extraRotation = zoneId.startsWith('grid-') ? state.gridRotation : 0;
+        const totalRotation = normalizeDegrees(rotation + extraRotation);
+        card.style.transform = `translate(${x}px, ${y}px) rotate(${totalRotation}deg)`;
+      }
+
+      function normalizeDegrees(value) {
+        let v = value % 360;
+        if (v < 0) v += 360;
+        return v;
+      }
+
+      function findOpenStoreSlot() {
+        return storeSlots.find((slot) => !state.zoneOccupancy[slot.dataset.zone]);
+      }
+
+      function getCardWordOrientation(cardId) {
+        const card = document.getElementById(cardId);
+        const base = {
+          top: card.querySelector('.top').textContent,
+          right: card.querySelector('.right').textContent,
+          bottom: card.querySelector('.bottom').textContent,
+          left: card.querySelector('.left').textContent
+        };
+        const order = ['top', 'right', 'bottom', 'left'];
+        const steps = (normalizeDegrees(state.cards[cardId].rotation) / 90) % 4;
+        const oriented = {};
+        order.forEach((dir, index) => {
+          const fromIndex = (index - steps + 4) % 4;
+          const sourceDir = order[fromIndex];
+          oriented[dir] = base[sourceDir];
+        });
+        return oriented;
+      }
+
+      function collectCurrentPairs() {
+        const placements = {};
+        state.cardOrder.forEach((cardId) => {
+          const zone = state.cardPlacement[cardId];
+          if (zone && zone.startsWith('grid-')) {
+            placements[zone] = {
+              cardId,
+              words: getCardWordOrientation(cardId)
+            };
+          }
+        });
+        return {
+          top: placements['grid-0-0'] && placements['grid-0-1']
+            ? [placements['grid-0-0'].words.top, placements['grid-0-1'].words.top]
+            : [],
+          right: placements['grid-0-1'] && placements['grid-1-1']
+            ? [placements['grid-0-1'].words.right, placements['grid-1-1'].words.right]
+            : [],
+          bottom: placements['grid-1-0'] && placements['grid-1-1']
+            ? [placements['grid-1-0'].words.bottom, placements['grid-1-1'].words.bottom]
+            : [],
+          left: placements['grid-0-0'] && placements['grid-1-0']
+            ? [placements['grid-0-0'].words.left, placements['grid-1-0'].words.left]
+            : []
+        };
+      }
+
+      function sameWordPair(actual, expected) {
+        if (!actual || !expected || actual.length !== 2 || expected.length !== 2) {
+          return false;
+        }
+        const normalize = (arr) => arr.map((word) => word.toLowerCase()).sort();
+        const [a1, a2] = normalize(actual);
+        const [b1, b2] = normalize(expected);
+        return a1 === b1 && a2 === b2;
+      }
+
+      function enableCardInteractions() {
+        cardData.forEach(({ el }) => {
+          el.classList.remove('locked');
+          el.addEventListener('pointerdown', onCardPointerDown);
+          el.addEventListener('click', onCardClick);
+        });
+      }
+
+      function disableCardInteractions() {
+        cardData.forEach(({ el }) => {
+          el.classList.add('locked');
+          el.removeEventListener('pointerdown', onCardPointerDown);
+          el.removeEventListener('click', onCardClick);
+        });
+      }
+
+      function onCardClick(event) {
+        const card = event.currentTarget;
+        if (state.phase !== 'solving') return;
+        if (state.selectedCard === card) {
+          clearSelection();
+          return;
+        }
+        selectCard(card);
+      }
+
+      function selectCard(card) {
+        clearSelection();
+        state.selectedCard = card;
+        card.classList.add('selected');
+        document.getElementById('cardRotateControls').classList.remove('hidden');
+      }
+
+      function clearSelection() {
+        if (state.selectedCard) {
+          state.selectedCard.classList.remove('selected');
+        }
+        state.selectedCard = null;
+        document.getElementById('cardRotateControls').classList.add('hidden');
+      }
+
+      const pointerState = {
+        activeCardId: null,
+        startX: 0,
+        startY: 0,
+        originX: 0,
+        originY: 0
+      };
+
+      function onCardPointerDown(event) {
+        const card = event.currentTarget;
+        if (state.phase !== 'solving') return;
+        pointerState.activeCardId = card.id;
+        pointerState.startX = event.clientX;
+        pointerState.startY = event.clientY;
+        pointerState.originX = state.cards[card.id].x;
+        pointerState.originY = state.cards[card.id].y;
+        card.setPointerCapture(event.pointerId);
+        card.style.cursor = 'grabbing';
+        card.addEventListener('pointermove', onCardPointerMove);
+        card.addEventListener('pointerup', onCardPointerUp);
+      }
+
+      function onCardPointerMove(event) {
+        const cardId = pointerState.activeCardId;
+        if (!cardId) return;
+        const card = document.getElementById(cardId);
+        const dx = event.clientX - pointerState.startX;
+        const dy = event.clientY - pointerState.startY;
+        state.cards[cardId].x = pointerState.originX + dx;
+        state.cards[cardId].y = pointerState.originY + dy;
+        applyCardTransform(cardId);
+      }
+
+      function onCardPointerUp(event) {
+        const cardId = pointerState.activeCardId;
+        if (!cardId) return;
+        const card = document.getElementById(cardId);
+        card.releasePointerCapture(event.pointerId);
+        card.style.cursor = 'grab';
+        card.removeEventListener('pointermove', onCardPointerMove);
+        card.removeEventListener('pointerup', onCardPointerUp);
+        pointerState.activeCardId = null;
+        snapToClosestZone(cardId);
+      }
+
+      function snapToClosestZone(cardId) {
+        const zones = [...gridCells, ...storeSlots];
+        let bestZone = null;
+        let bestDistance = Infinity;
+        const cardRect = document.getElementById(cardId).getBoundingClientRect();
+        const cardCenter = {
+          x: cardRect.left + cardRect.width / 2,
+          y: cardRect.top + cardRect.height / 2
+        };
+
+        zones.forEach((zone) => {
+          const rect = zone.getBoundingClientRect();
+          const center = {
+            x: rect.left + rect.width / 2,
+            y: rect.top + rect.height / 2
+          };
+          const distance = Math.hypot(center.x - cardCenter.x, center.y - cardCenter.y);
+          if (distance < bestDistance) {
+            bestDistance = distance;
+            bestZone = zone;
+          }
+        });
+
+        if (bestZone) {
+          snapCardToZone(cardId, bestZone.dataset.zone);
+        }
+      }
+
+      document.getElementById('rotateGridButton').addEventListener('click', () => {
+        state.gridRotation = normalizeDegrees(state.gridRotation + 90);
+        boardShell.style.transform = `rotate(${state.gridRotation}deg)`;
+        state.cardOrder.forEach((cardId) => {
+          const zone = state.cardPlacement[cardId];
+          if (zone && zone.startsWith('grid-')) {
+            snapCardToZone(cardId, zone);
+          } else {
+            applyCardTransform(cardId);
+          }
+        });
+      });
+
+      document.querySelectorAll('#cardRotateControls button').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          if (!state.selectedCard) return;
+          const delta = parseInt(btn.dataset.rotate, 10);
+          const cardId = state.selectedCard.id;
+          state.cards[cardId].rotation = normalizeDegrees(state.cards[cardId].rotation + delta);
+          state.selectedCard.dataset.rotation = String(state.cards[cardId].rotation);
+          applyCardTransform(cardId);
+        });
+      });
+
+      confirmButton.addEventListener('click', () => {
+        document.getElementById('confirmModal').classList.remove('hidden');
+        const alreadyConfirmed = confirmButton.dataset.confirmed === 'true';
+        if (alreadyConfirmed) {
+          document.getElementById('confirmContent').style.display = 'none';
+          document.getElementById('startContent').classList.remove('hidden');
+        } else {
+          document.getElementById('confirmContent').style.display = 'flex';
+          document.getElementById('confirmContent').style.flexDirection = 'column';
+          document.getElementById('startContent').classList.add('hidden');
+        }
+      });
+
+      document.getElementById('cancelConfirmButton').addEventListener('click', () => {
+        document.getElementById('confirmModal').classList.add('hidden');
+      });
+
+      document.getElementById('confirmHintsAction').addEventListener('click', () => {
+        document.getElementById('confirmContent').style.display = 'none';
+        document.getElementById('startContent').classList.remove('hidden');
+        confirmButton.dataset.confirmed = 'true';
+      });
+
+      document.getElementById('startGameButton').addEventListener('click', () => {
+        document.getElementById('confirmModal').classList.add('hidden');
+        startSolvingPhase();
+      });
+
+      function startSolvingPhase() {
+        state.phase = 'solving';
+        document.getElementById('feedbackLegend').classList.remove('hidden');
+        shuffleIntoStore();
+        clearSelection();
+        enableCardInteractions();
+        document.getElementById('checkAnswerButton').disabled = false;
+        timerDisplay.classList.remove('hidden');
+        resumeTimer(true);
+      }
+
+      function shuffleIntoStore() {
+        const targetZones = [...storeSlots.map((slot) => slot.dataset.zone)];
+        shuffleArray(targetZones);
+        state.cardOrder.forEach((cardId, index) => {
+          const rotations = [0, 90, 180, 270];
+          state.cards[cardId].rotation = rotations[Math.floor(Math.random() * rotations.length)];
+          state.cards[cardId].x = 0;
+          state.cards[cardId].y = 0;
+          document.getElementById(cardId).dataset.rotation = String(state.cards[cardId].rotation);
+          snapCardToZone(cardId, targetZones[index]);
+        });
+      }
+
+      document.getElementById('checkAnswerButton').addEventListener('click', () => {
+        if (state.phase !== 'solving') return;
+        const allPlaced = state.cardOrder.every((cardId) => {
+          const zone = state.cardPlacement[cardId];
+          return zone && zone.startsWith('grid-');
+        });
+        if (!allPlaced) {
+          pauseTimer();
+          openMessageModal({
+            title: 'Place every card',
+            body: '<p>Each clover card must snap into the grid before checking your answer.</p>',
+            primaryText: 'Let me fix it',
+            onPrimary: () => resumeTimer()
+          });
+          return;
+        }
+        pauseTimer();
+        state.attempts += 1;
+        const evaluation = evaluateBoard();
+        const allPairsMatch = Object.values(evaluation.pairMatches).every(Boolean);
+        const allCorrect = evaluation.results.every((res) => res.status === 'green') && allPairsMatch;
+        if (allCorrect) {
+          showSuccessModal();
+        } else {
+          showRetryModal();
+        }
+      });
+
+      function evaluateBoard() {
+        resetCardStatuses();
+        const results = state.cardOrder.map((cardId) => {
+          const card = document.getElementById(cardId);
+          const zone = state.cardPlacement[cardId];
+          const expectedZone = state.solution.zoneByCard[cardId];
+          const rotation = normalizeDegrees(state.cards[cardId].rotation);
+          const expectedRotation = state.solution.rotationByCard[cardId];
+          let status = 'red';
+          if (zone === expectedZone) {
+            status = rotation === expectedRotation ? 'green' : 'yellow';
+          } else {
+            status = rotation === expectedRotation ? 'orange' : 'red';
+          }
+          card.classList.add(`status-${status}`);
+          return { cardId, status };
+        });
+        const pairSnapshot = collectCurrentPairs();
+        const expectedPairs = {
+          top: state.hints[0]?.words || [],
+          right: state.hints[1]?.words || [],
+          bottom: state.hints[2]?.words || [],
+          left: state.hints[3]?.words || []
+        };
+        const pairMatches = {
+          top: sameWordPair(pairSnapshot.top, expectedPairs.top),
+          right: sameWordPair(pairSnapshot.right, expectedPairs.right),
+          bottom: sameWordPair(pairSnapshot.bottom, expectedPairs.bottom),
+          left: sameWordPair(pairSnapshot.left, expectedPairs.left)
+        };
+        return { results, pairMatches };
+      }
+
+      function showRetryModal() {
+        openMessageModal({
+          title: 'Keep going!',
+          body: '<p>Some cards still need attention. Use the colored borders and legend to guide your adjustments.</p>',
+          primaryText: 'Try again',
+          onPrimary: () => resumeTimer()
+        });
+      }
+
+      function showSuccessModal() {
+        const totalSeconds = Math.round(getElapsedSeconds());
+        const minutes = String(Math.floor(totalSeconds / 60)).padStart(2, '0');
+        const seconds = String(totalSeconds % 60).padStart(2, '0');
+        const score = Math.round((300 - totalSeconds - state.attempts * 50) / 3);
+        const body = `
+          <p>Brilliant work! You solved the clover in <strong>${minutes}:${seconds}</strong>.</p>
+          <p>Checks used: <strong>${state.attempts}</strong></p>
+          <p>Final score: <strong>${score}</strong></p>
+        `;
+        openMessageModal({
+          title: 'Clover completed!',
+          body,
+          primaryText: 'Celebrate',
+          onPrimary: () => {}
+        });
+      }
+
+      function resumeTimer(reset = false) {
+        if (reset) {
+          state.elapsedBeforePause = 0;
+        }
+        state.timerStart = Date.now();
+        clearInterval(state.timerInterval);
+        state.timerInterval = setInterval(updateTimerDisplay, 1000);
+        updateTimerDisplay();
+      }
+
+      function pauseTimer() {
+        if (!state.timerStart) return;
+        state.elapsedBeforePause += Date.now() - state.timerStart;
+        state.timerStart = null;
+        clearInterval(state.timerInterval);
+        state.timerInterval = null;
+        updateTimerDisplay();
+      }
+
+      function getElapsedSeconds() {
+        let elapsed = state.elapsedBeforePause / 1000;
+        if (state.timerStart) {
+          elapsed += (Date.now() - state.timerStart) / 1000;
+        }
+        return elapsed;
+      }
+
+      function updateTimerDisplay() {
+        const elapsed = Math.round(getElapsedSeconds());
+        const minutes = String(Math.floor(elapsed / 60)).padStart(2, '0');
+        const seconds = String(elapsed % 60).padStart(2, '0');
+        timerDisplay.textContent = `${minutes}:${seconds}`;
+      }
+
+      document.getElementById('shareButton').addEventListener('click', () => {
+        const params = new URLSearchParams();
+        state.hints.forEach((hint, index) => {
+          params.set(`hint${index}`, hint.hint);
+        });
+        params.set('gridRotation', String(state.gridRotation));
+        const vocab = state.cardOrder.flatMap((cardId) => {
+          const card = document.getElementById(cardId);
+          return ['top', 'right', 'bottom', 'left'].map((side) => card.querySelector(`.${side}`).textContent);
+        });
+        params.set('vocab', vocab.join(','));
+        const shareUrl = `${window.location.origin}${window.location.pathname}?${params.toString()}`;
+        navigator.clipboard?.writeText(shareUrl).then(() => {
+          openMessageModal({
+            title: 'Link copied',
+            body: '<p>Your current clover configuration link is ready to share!</p>',
+            primaryText: 'Nice'
+          });
+        }).catch(() => {
+          openMessageModal({
+            title: 'Copy failed',
+            body: `<p>Here's the link instead:</p><p><small>${shareUrl}</small></p>`,
+            primaryText: 'Close'
+          });
+        });
+      });
+
+      function openMessageModal({ title, body, primaryText, secondaryText, onPrimary, onSecondary }) {
+        const modal = document.getElementById('messageModal');
+        document.getElementById('messageTitle').innerHTML = title;
+        document.getElementById('messageBody').innerHTML = body;
+        const actions = document.getElementById('messageActions');
+        actions.innerHTML = '';
+
+        if (secondaryText) {
+          const secondary = document.createElement('button');
+          secondary.textContent = secondaryText;
+          secondary.className = 'secondary';
+          secondary.addEventListener('click', () => {
+            modal.classList.add('hidden');
+            secondary.remove();
+            if (onSecondary) onSecondary();
+          });
+          actions.appendChild(secondary);
+        }
+
+        const primary = document.createElement('button');
+        primary.textContent = primaryText || 'Close';
+        primary.addEventListener('click', () => {
+          modal.classList.add('hidden');
+          if (onPrimary) onPrimary();
+        });
+        actions.appendChild(primary);
+
+        modal.classList.remove('hidden');
+      }
+
+      document.addEventListener('click', (event) => {
+        if (!event.target.closest('.card') && !event.target.closest('#cardRotateControls')) {
+          clearSelection();
+        }
+      });
+
+      function loadFromURL() {
+        const params = new URLSearchParams(window.location.search);
+        if (!params.has('vocab')) return;
+        const vocab = params.get('vocab').split(',').map((w) => w.trim());
+        if (vocab.length >= 16) {
+          prepareGame(vocab.slice(0, 16));
+        }
+        const hints = [];
+        for (let i = 0; i < 4; i++) {
+          const hint = params.get(`hint${i}`);
+          if (hint) hints.push(hint);
+        }
+        if (hints.length === 4) {
+          state.hints.forEach((item, index) => {
+            item.hint = hints[index];
+          });
+          applyHintsToBoard();
+        }
+        document.getElementById('hintModal').classList.add('hidden');
+        gameScreen.classList.remove('hidden');
+        layoutStoreSlots();
+        state.phase = 'setup';
+        snapCardsToSolution();
+      }
+
+      loadFromURL();
+    </script>
+  </body>
 </html>
