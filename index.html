@@ -179,7 +179,7 @@
   </div>
 
   <!-- Outer wrapper for visual rotation -->
-  <div class="outer-plate" id="outerPlate">
+  <div class="outer-plate board-wrapper" id="outerPlate">
     <div class="grid-container" id="plateContainer">
       <input type="text" class="hint-input top-hint" placeholder="Top Hint" />
       <div class="grid" id="grid">
@@ -222,7 +222,7 @@
 
   <div class="buttons">
     <button onclick="rotateSelectedCard()">Rotate Selected Card</button>
-    <button onclick="rotateEntireGrid()">Rotate Grid</button>
+    <button id="rotateGridButton">Rotate Grid</button>
     <button onclick="finishHint()">Finish Hint</button>
     <button onclick="shareGame()">Share Game</button>
   </div>
@@ -233,6 +233,8 @@
      *******************************************************/
     let selectedCard = null;
     let gridRotation = 0; // how many degrees we rotated outerPlate
+    let pendingRotationCleanup = null;
+    let gridGeometry = null;
 
     // We'll store each card's "left, top" in a map, so we can do incremental updates
     const cardPositions = {
@@ -324,9 +326,63 @@
     }
 
     function rotateEntireGrid() {
-      gridRotation += 90;
-      let outerPlate = document.getElementById('outerPlate');
+      gridRotation = (gridRotation + 90) % 360;
+      const outerPlate = document.getElementById('outerPlate');
+      if (!outerPlate) return;
       outerPlate.style.transform = `rotate(${gridRotation}deg)`;
+      schedulePostRotationWork(outerPlate);
+    }
+
+    function schedulePostRotationWork(outerPlate) {
+      if (!outerPlate) return;
+
+      if (pendingRotationCleanup) {
+        pendingRotationCleanup();
+      }
+
+      gridGeometry = null;
+
+      let settled = false;
+      let rafId1 = null;
+      let rafId2 = null;
+
+      function afterRotationSettled() {
+        recordGridGeometry();
+        const cards = document.querySelectorAll('.card');
+        cards.forEach((card) => {
+          snapCardToZone(card);
+          applyCardTransform(card);
+        });
+      }
+
+      function cleanup() {
+        outerPlate.removeEventListener('transitionend', onTransitionEnd);
+        if (rafId1 !== null) cancelAnimationFrame(rafId1);
+        if (rafId2 !== null) cancelAnimationFrame(rafId2);
+        pendingRotationCleanup = null;
+      }
+
+      function finalize() {
+        if (settled) return;
+        settled = true;
+        cleanup();
+        afterRotationSettled();
+      }
+
+      function onTransitionEnd(event) {
+        if (event.target !== outerPlate || event.propertyName !== 'transform') return;
+        finalize();
+      }
+
+      outerPlate.addEventListener('transitionend', onTransitionEnd);
+
+      rafId1 = requestAnimationFrame(() => {
+        rafId2 = requestAnimationFrame(() => {
+          finalize();
+        });
+      });
+
+      pendingRotationCleanup = cleanup;
     }
 
     function finishHint() {
@@ -451,6 +507,8 @@
             cardPositions[cardId].y = snappedYLocal;
             card.style.left = snappedXLocal + "px";
             card.style.top = snappedYLocal + "px";
+            card.dataset.row = row;
+            card.dataset.col = col;
           }
 
           card.style.zIndex = 10;
@@ -479,6 +537,63 @@
         default:
           return [vRow, vCol];
       }
+    }
+
+    /*******************************************************
+     * BOARD GEOMETRY HELPERS
+     *******************************************************/
+    function recordGridGeometry() {
+      const gridEl = document.getElementById('grid');
+      const plateEl = document.getElementById('plateContainer');
+      if (!gridEl || !plateEl) {
+        gridGeometry = null;
+        return;
+      }
+
+      const gridRect = gridEl.getBoundingClientRect();
+      const plateRect = plateEl.getBoundingClientRect();
+      const cellCount = 2;
+
+      gridGeometry = {
+        left: gridRect.left,
+        top: gridRect.top,
+        cellWidth: gridRect.width / cellCount,
+        cellHeight: gridRect.height / cellCount,
+        plateLeft: plateRect.left,
+        plateTop: plateRect.top
+      };
+    }
+
+    function snapCardToZone(card) {
+      if (!card || !card.id) return;
+
+      if (!gridGeometry) {
+        recordGridGeometry();
+      }
+
+      if (!gridGeometry) return;
+
+      const row = parseInt(card.dataset.row, 10);
+      const col = parseInt(card.dataset.col, 10);
+
+      if (Number.isNaN(row) || Number.isNaN(col)) return;
+
+      const xScreen = gridGeometry.left + col * gridGeometry.cellWidth;
+      const yScreen = gridGeometry.top + row * gridGeometry.cellHeight;
+
+      const xLocal = xScreen - gridGeometry.plateLeft;
+      const yLocal = yScreen - gridGeometry.plateTop;
+
+      cardPositions[card.id].x = xLocal;
+      cardPositions[card.id].y = yLocal;
+      card.style.left = `${xLocal}px`;
+      card.style.top = `${yLocal}px`;
+    }
+
+    function applyCardTransform(card) {
+      if (!card) return;
+      const rotation = parseInt(card.dataset.rotation || "0", 10);
+      card.style.transform = `rotate(${rotation}deg)`;
     }
 
     /*******************************************************
@@ -606,12 +721,19 @@
       cardPositions[card.id].y = yLocal;
       card.style.left = xLocal + "px";
       card.style.top = yLocal + "px";
+      card.dataset.row = row;
+      card.dataset.col = col;
     }
 
     snapToGrid(c1, 0, 0);
     snapToGrid(c2, 0, 1);
     snapToGrid(c3, 1, 0);
     snapToGrid(c4, 1, 1);
+
+    const rotateGridButton = document.getElementById('rotateGridButton');
+    if (rotateGridButton) {
+      rotateGridButton.addEventListener('click', rotateEntireGrid);
+    }
 
     // Load game state from URL parameters (if any)
     loadGameFromURL();
