@@ -122,7 +122,8 @@
         height: 420px;
         display: grid;
         place-items: center;
-        transition: transform 0.4s ease;
+        transition: transform 0.5s ease;
+        transform-origin: center center;
       }
 
       .board-frame {
@@ -192,7 +193,7 @@
         border: 2px solid rgba(31, 90, 55, 0.28);
         box-shadow: 0 20px 42px rgba(31, 90, 55, 0.22);
         cursor: grab;
-        transition: box-shadow 0.2s ease, border 0.2s ease;
+        transition: transform 0.3s ease, box-shadow 0.2s ease, border 0.2s ease;
         pointer-events: auto;
         touch-action: none;
         z-index: 10;
@@ -670,6 +671,7 @@
         timerStart: null,
         elapsedBeforePause: 0,
         timerInterval: null,
+        gridGeometry: null,
         solution: {
           zoneByCard: {
             card1: 'grid-0-0',
@@ -693,6 +695,9 @@
 
       const cardLayer = document.getElementById('cardLayer');
       cardData.forEach(({ el }) => cardLayer.appendChild(el));
+
+      const boardShell = document.querySelector('.board-wrapper');
+      const gridCells = Array.from(document.querySelectorAll('.grid-cell'));
 
       const storeTrack = document.getElementById('storeTrack');
       const storeSlots = [];
@@ -725,8 +730,57 @@
         });
       }
 
-      layoutStoreSlots();
-      window.addEventListener('resize', layoutStoreSlots);
+      function recordGridGeometry() {
+        const boardRect = boardShell.getBoundingClientRect();
+        if (!boardRect.width || !boardRect.height) {
+          return;
+        }
+
+        const stageRect = getStageRect();
+        const centerX = boardRect.left - stageRect.left + boardRect.width / 2;
+        const centerY = boardRect.top - stageRect.top + boardRect.height / 2;
+        const rotationRad = (state.gridRotation * Math.PI) / 180;
+        const cosR = Math.cos(rotationRad);
+        const sinR = Math.sin(rotationRad);
+
+        const cells = {};
+        gridCells.forEach((cell) => {
+          const zoneId = cell.dataset.zone;
+          if (!zoneId) return;
+          const rect = cell.getBoundingClientRect();
+          const cellCenterX = rect.left - stageRect.left + rect.width / 2;
+          const cellCenterY = rect.top - stageRect.top + rect.height / 2;
+          const offsetX = cellCenterX - centerX;
+          const offsetY = cellCenterY - centerY;
+
+          const baseX = offsetX * cosR + offsetY * sinR;
+          const baseY = -offsetX * sinR + offsetY * cosR;
+          cells[zoneId] = { baseX, baseY };
+        });
+
+        state.gridGeometry = {
+          center: { x: centerX, y: centerY },
+          cells
+        };
+      }
+
+      function reapplyGridCardPositions() {
+        state.cardOrder.forEach((cardId) => {
+          const zone = state.cardPlacement[cardId];
+          if (zone && zone.startsWith('grid-')) {
+            snapCardToZone(cardId, zone);
+          }
+        });
+      }
+
+      function handleResize() {
+        layoutStoreSlots();
+        recordGridGeometry();
+        reapplyGridCardPositions();
+      }
+
+      handleResize();
+      window.addEventListener('resize', handleResize);
 
       function createCardElement(id) {
         const card = document.createElement('div');
@@ -751,9 +805,6 @@
           el.classList.remove('status-red', 'status-orange', 'status-yellow', 'status-green');
         });
       }
-
-      const boardShell = document.querySelector('.board-wrapper');
-      const gridCells = Array.from(document.querySelectorAll('.grid-cell'));
 
       const quickPlayButton = document.getElementById('quickPlayButton');
       const customPlayButton = document.getElementById('customPlayButton');
@@ -822,6 +873,7 @@
         state.hints = [];
         state.activePairIndex = 0;
         state.gridRotation = 0;
+        state.gridGeometry = null;
         state.selectedCard = null;
         state.cardPlacement = {};
         state.zoneOccupancy = {};
@@ -966,9 +1018,12 @@
         const previousPhase = state.phase;
         document.getElementById('hintModal').classList.add('hidden');
         applyHintsToBoard();
+        state.gridRotation = 0;
+        boardShell.style.transform = 'rotate(0deg)';
+        recordGridGeometry();
         if (previousPhase === 'hint') {
           gameScreen.classList.remove('hidden');
-          layoutStoreSlots();
+          handleResize();
           snapCardsToSolution();
           state.phase = 'setup';
         } else if (previousPhase === 'setup') {
@@ -993,6 +1048,9 @@
       }
 
       function snapCardsToSolution() {
+        if (!state.gridGeometry) {
+          recordGridGeometry();
+        }
         state.cardOrder.forEach((cardId) => {
           const zoneId = state.solution.zoneByCard[cardId];
           snapCardToZone(cardId, zoneId);
@@ -1030,10 +1088,26 @@
           }
         }
 
-        const stageRect = getStageRect();
-        const zoneRect = zoneEl.getBoundingClientRect();
-        const x = zoneRect.left - stageRect.left;
-        const y = zoneRect.top - stageRect.top;
+        let x;
+        let y;
+        if (zoneId.startsWith('grid-') && state.gridGeometry && state.gridGeometry.cells[zoneId]) {
+          const { center, cells } = state.gridGeometry;
+          const base = cells[zoneId];
+          const rotationRad = (state.gridRotation * Math.PI) / 180;
+          const cosR = Math.cos(rotationRad);
+          const sinR = Math.sin(rotationRad);
+          const rotatedX = base.baseX * cosR - base.baseY * sinR;
+          const rotatedY = base.baseX * sinR + base.baseY * cosR;
+          const cardWidth = card.offsetWidth;
+          const cardHeight = card.offsetHeight;
+          x = center.x + rotatedX - cardWidth / 2;
+          y = center.y + rotatedY - cardHeight / 2;
+        } else {
+          const stageRect = getStageRect();
+          const zoneRect = zoneEl.getBoundingClientRect();
+          x = zoneRect.left - stageRect.left;
+          y = zoneRect.top - stageRect.top;
+        }
 
         state.cardPlacement[cardId] = zoneId;
         state.zoneOccupancy[zoneId] = cardId;
@@ -1165,7 +1239,9 @@
         startX: 0,
         startY: 0,
         originX: 0,
-        originY: 0
+        originY: 0,
+        lastX: 0,
+        lastY: 0
       };
 
       function onCardPointerDown(event) {
@@ -1176,6 +1252,8 @@
         pointerState.startY = event.clientY;
         pointerState.originX = state.cards[card.id].x;
         pointerState.originY = state.cards[card.id].y;
+        pointerState.lastX = event.clientX;
+        pointerState.lastY = event.clientY;
         card.setPointerCapture(event.pointerId);
         card.style.cursor = 'grabbing';
         card.addEventListener('pointermove', onCardPointerMove);
@@ -1186,10 +1264,22 @@
         const cardId = pointerState.activeCardId;
         if (!cardId) return;
         const card = document.getElementById(cardId);
-        const dx = event.clientX - pointerState.startX;
-        const dy = event.clientY - pointerState.startY;
-        state.cards[cardId].x = pointerState.originX + dx;
-        state.cards[cardId].y = pointerState.originY + dy;
+        const dxScreen = event.clientX - pointerState.lastX;
+        const dyScreen = event.clientY - pointerState.lastY;
+        const currentZone = state.cardPlacement[cardId];
+        let dxLocal = dxScreen;
+        let dyLocal = dyScreen;
+        if (currentZone && currentZone.startsWith('grid-')) {
+          const rad = (-state.gridRotation * Math.PI) / 180;
+          const cosR = Math.cos(rad);
+          const sinR = Math.sin(rad);
+          dxLocal = dxScreen * cosR - dyScreen * sinR;
+          dyLocal = dxScreen * sinR + dyScreen * cosR;
+        }
+        state.cards[cardId].x += dxLocal;
+        state.cards[cardId].y += dyLocal;
+        pointerState.lastX = event.clientX;
+        pointerState.lastY = event.clientY;
         applyCardTransform(cardId);
       }
 
@@ -1236,6 +1326,7 @@
       document.getElementById('rotateGridButton').addEventListener('click', () => {
         state.gridRotation = normalizeDegrees(state.gridRotation + 90);
         boardShell.style.transform = `rotate(${state.gridRotation}deg)`;
+        recordGridGeometry();
         state.cardOrder.forEach((cardId) => {
           const zone = state.cardPlacement[cardId];
           if (zone && zone.startsWith('grid-')) {
