@@ -4,27 +4,158 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Inverse Transform + Rotation Remapped Snapping</title>
+  <title>So Clover</title>
   <style>
+    :root {
+      --clover-100: #f1f9f3;
+      --clover-200: #d8f1df;
+      --clover-300: #b5e0c5;
+      --clover-400: #8fcaa6;
+      --clover-500: #6da97a;
+      --clover-600: #4f8e60;
+      --clover-700: #3d6f4a;
+      --text-dark: #1f3324;
+      --text-muted: #4c6654;
+      --shadow-soft: rgba(61, 111, 74, 0.18);
+      --border-soft: rgba(77, 125, 92, 0.35);
+      --error-red: #e74c3c;
+      --warning-orange: #f2994a;
+      --caution-yellow: #f2c94c;
+      --success-green: #2f8f58;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
     body {
-      font-family: Arial, sans-serif;
+      margin: 0;
+      font-family: "Nunito", "Segoe UI", sans-serif;
+      background: radial-gradient(circle at top, var(--clover-100) 0%, var(--clover-200) 40%, var(--clover-300) 100%);
+      color: var(--text-dark);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      padding: 30px 20px 60px;
+    }
+
+    h1,
+    h2,
+    h3 {
+      margin: 0;
+      font-weight: 700;
+    }
+
+    button {
+      font-family: inherit;
+    }
+
+    .app-shell {
+      width: min(1024px, 100%);
+      background: rgba(255, 255, 255, 0.9);
+      border-radius: 28px;
+      box-shadow: 0 25px 60px -35px var(--shadow-soft);
+      padding: 32px;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(255, 255, 255, 0.45);
+    }
+
+    .app-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .app-title {
+      font-size: clamp(1.8rem, 4vw, 2.5rem);
+      color: var(--clover-700);
+      letter-spacing: 1px;
+    }
+
+    .timer-display {
+      padding: 10px 18px;
+      border-radius: 999px;
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.9), rgba(220, 240, 225, 0.95));
+      border: 1px solid var(--border-soft);
+      font-weight: 700;
+      color: var(--clover-700);
+      min-width: 96px;
+      text-align: center;
+      box-shadow: 0 10px 25px -20px var(--shadow-soft);
+    }
+
+    .timer-display.hidden {
+      visibility: hidden;
+    }
+
+    .app-main {
+      display: flex;
+      flex-direction: column;
+      gap: 28px;
+      align-items: center;
+    }
+
+    .menu {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      align-items: center;
+    }
+
+    .primary-button,
+    .secondary-button {
+      width: min(280px, 100%);
+      padding: 14px 20px;
+      border-radius: 16px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      transition: transform 0.2s ease, box-shadow 0.3s ease;
+    }
+
+    .primary-button {
+      background: linear-gradient(135deg, var(--clover-500), var(--clover-600));
+      color: #fff;
+      box-shadow: 0 18px 40px -24px rgba(79, 142, 96, 0.8);
+    }
+
+    .primary-button:hover,
+    .secondary-button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 18px 30px -20px rgba(61, 111, 74, 0.35);
+    }
+
+    .secondary-button {
+      background: rgba(255, 255, 255, 0.8);
+      color: var(--clover-700);
+      border: 1px solid var(--border-soft);
+    }
+
+    .game-area {
+      width: 100%;
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: center;
-      height: 100vh;
-      margin: 0;
-      background-color: #f5f5f5;
+      gap: 24px;
     }
 
-    /* Outer plate (rotates visually) */
     .outer-plate {
       transition: transform 0.5s ease;
-      transform-origin: center center;
+      transform-origin: center;
       display: inline-block;
+      padding: 24px;
+      background: rgba(255, 255, 255, 0.6);
+      border-radius: 32px;
+      border: 1px solid rgba(255, 255, 255, 0.6);
+      box-shadow: 0 20px 50px -30px var(--shadow-soft);
     }
 
-    /* The unrotated container inside */
     .grid-container {
       position: relative;
       display: grid;
@@ -35,26 +166,28 @@
       gap: 0;
     }
 
-    .hint-input {
-      box-sizing: border-box;
-      text-align: center;
-      margin: 0;
-      padding: 5px;
-      font-size: 14px;
-      border: 1px solid #ccc;
-      border-radius: 3px;
+    .hint-display {
+      padding: 10px 14px;
+      border-radius: 16px;
+      background: rgba(255, 255, 255, 0.8);
+      border: 1px solid var(--border-soft);
+      font-weight: 600;
+      color: var(--clover-700);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5);
     }
 
     .top-hint {
       grid-column: 2;
       grid-row: 1;
-      width: 300px;
+      min-width: 260px;
+      text-align: center;
     }
 
     .bottom-hint {
       grid-column: 2;
       grid-row: 3;
-      width: 300px;
+      min-width: 260px;
+      text-align: center;
       transform: rotate(180deg);
     }
 
@@ -63,34 +196,35 @@
       grid-row: 2;
       writing-mode: vertical-rl;
       transform: rotate(180deg);
-      height: 300px;
+      min-height: 260px;
     }
 
     .right-hint {
       grid-column: 3;
       grid-row: 2;
       writing-mode: vertical-rl;
-      height: 300px;
+      min-height: 260px;
     }
 
-    /* 2×2 snapping grid in the center */
     .grid {
       grid-column: 2;
       grid-row: 2;
       display: grid;
       grid-template-columns: repeat(2, 150px);
       grid-template-rows: repeat(2, 150px);
-      border: 2px dashed #ccc;
+      border: 2px dashed rgba(79, 142, 96, 0.35);
+      border-radius: 20px;
+      overflow: hidden;
+      background: rgba(255, 255, 255, 0.35);
     }
 
     .grid-cell {
       width: 150px;
       height: 150px;
-      border: 1px solid #ddd;
+      border: 1px solid rgba(111, 167, 125, 0.25);
       box-sizing: border-box;
     }
 
-    /* Cards absolute in the .grid-container space */
     .card {
       width: 150px;
       height: 150px;
@@ -100,30 +234,40 @@
         "left right"
         "bottom bottom";
       position: absolute;
-      background: #fff;
-      border: 2px solid #ccc;
+      background: radial-gradient(circle at center, rgba(255, 255, 255, 0.95) 0%, rgba(212, 236, 217, 0.95) 55%, rgba(109, 169, 122, 0.9) 100%);
+      border: 3px solid rgba(255, 255, 255, 0.6);
+      border-radius: 18px;
       cursor: grab;
-      transition: transform 0.3s, border 0.3s;
+      transition: transform 0.3s, border 0.3s, box-shadow 0.3s;
       z-index: 10;
       touch-action: none;
-      /* for pointer events on touch */
+      box-shadow: 0 16px 32px -24px rgba(36, 82, 50, 0.65);
     }
 
     .card.selected {
-      border: 2px solid #007bff;
+      border-color: var(--clover-500);
+      box-shadow: 0 18px 38px -24px rgba(79, 142, 96, 0.6);
+    }
+
+    .card.locked-card {
+      cursor: default;
+      pointer-events: none;
+      opacity: 0.96;
     }
 
     .side {
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 16px;
-      font-weight: bold;
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--text-dark);
+      padding: 6px;
+      text-align: center;
     }
 
     .top {
       grid-area: top;
-      transform: rotate(0deg);
     }
 
     .right {
@@ -141,100 +285,430 @@
       transform: rotate(270deg);
     }
 
-    .buttons {
-      margin-top: 20px;
+    .control-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      width: min(280px, 100%);
+      margin-top: 12px;
+    }
+
+    .control-panel button {
+      width: 100%;
+      padding: 12px 18px;
+      border-radius: 14px;
+      border: none;
+      background: rgba(255, 255, 255, 0.85);
+      color: var(--clover-700);
+      font-weight: 600;
+      cursor: pointer;
+      border: 1px solid var(--border-soft);
+      transition: background 0.2s ease, transform 0.2s ease;
+    }
+
+    .control-panel button.primary-action {
+      background: linear-gradient(135deg, var(--clover-500), var(--clover-600));
+      color: #fff;
+      border: none;
+      box-shadow: 0 14px 30px -20px rgba(79, 142, 96, 0.8);
+    }
+
+    .control-panel button:hover {
+      transform: translateY(-1px);
+    }
+
+    .control-panel button.hidden {
+      display: none;
+    }
+
+    .legend {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      padding: 16px 20px;
+      background: rgba(255, 255, 255, 0.7);
+      border-radius: 18px;
+      border: 1px solid rgba(255, 255, 255, 0.6);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6);
+      width: min(320px, 100%);
+    }
+
+    .legend-title {
+      font-weight: 700;
+      color: var(--clover-600);
+      font-size: 0.95rem;
+    }
+
+    .legend-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 0.9rem;
+      color: var(--text-muted);
+    }
+
+    .legend-color {
+      width: 18px;
+      height: 18px;
+      border-radius: 6px;
+      border: 1px solid rgba(0, 0, 0, 0.1);
+    }
+
+    .legend-green {
+      background: var(--success-green);
+    }
+
+    .legend-yellow {
+      background: var(--caution-yellow);
+    }
+
+    .legend-orange {
+      background: var(--warning-orange);
+    }
+
+    .legend-red {
+      background: var(--error-red);
+    }
+
+    .card.status-perfect {
+      border-color: var(--success-green);
+      box-shadow: 0 0 0 3px rgba(47, 143, 88, 0.2), 0 12px 28px -20px rgba(47, 143, 88, 0.8);
+    }
+
+    .card.status-orientation {
+      border-color: var(--caution-yellow);
+      box-shadow: 0 0 0 3px rgba(242, 201, 76, 0.25), 0 12px 28px -20px rgba(242, 201, 76, 0.6);
+    }
+
+    .card.status-location {
+      border-color: var(--warning-orange);
+      box-shadow: 0 0 0 3px rgba(242, 153, 74, 0.25), 0 12px 28px -20px rgba(242, 153, 74, 0.6);
+    }
+
+    .card.status-wrong {
+      border-color: var(--error-red);
+      box-shadow: 0 0 0 3px rgba(231, 76, 60, 0.25), 0 12px 28px -20px rgba(231, 76, 60, 0.6);
+    }
+
+    .modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(31, 51, 36, 0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      z-index: 1000;
+    }
+
+    .modal.hidden {
+      display: none;
+    }
+
+    .modal-content {
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.97), rgba(232, 247, 236, 0.95));
+      border-radius: 24px;
+      padding: 28px;
+      width: min(480px, 100%);
+      box-shadow: 0 30px 70px -40px rgba(31, 51, 36, 0.55);
+      border: 1px solid rgba(255, 255, 255, 0.8);
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      color: var(--text-dark);
+    }
+
+    .modal-content h2 {
+      color: var(--clover-700);
+    }
+
+    .modal-body {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      color: var(--text-muted);
+      font-size: 0.95rem;
+      line-height: 1.5;
+    }
+
+    textarea,
+    input[type="text"] {
+      font-family: inherit;
+      width: 100%;
+      border-radius: 16px;
+      border: 1px solid var(--border-soft);
+      padding: 12px 16px;
+      font-size: 1rem;
+      background: rgba(255, 255, 255, 0.95);
+      box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.05);
+    }
+
+    textarea:focus,
+    input[type="text"]:focus {
+      outline: none;
+      border-color: var(--clover-500);
+      box-shadow: 0 0 0 4px rgba(109, 169, 122, 0.2);
+    }
+
+    .modal-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      justify-content: flex-end;
+    }
+
+    .modal-actions button {
+      flex: 1;
+      min-width: 140px;
+      padding: 12px 16px;
+      border-radius: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+    }
+
+    .modal-actions .outline {
+      background: rgba(255, 255, 255, 0.85);
+      color: var(--clover-700);
+      border: 1px solid var(--border-soft);
+    }
+
+    .modal-actions .solid {
+      background: linear-gradient(135deg, var(--clover-500), var(--clover-600));
+      color: #fff;
+      box-shadow: 0 18px 40px -30px rgba(79, 142, 96, 0.9);
+    }
+
+    .pair-display {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      align-items: center;
+      text-align: center;
+    }
+
+    .pair-chips {
       display: flex;
       gap: 10px;
+      flex-wrap: wrap;
+      justify-content: center;
     }
 
-    button {
-      padding: 10px 20px;
-      font-size: 14px;
+    .pair-chip {
+      padding: 8px 14px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.9);
+      border: 1px solid var(--border-soft);
+      font-weight: 600;
+      color: var(--clover-700);
+      box-shadow: 0 8px 18px -12px rgba(31, 51, 36, 0.35);
+    }
+
+    .hint-navigation {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .hint-navigation button {
+      flex: 1;
+      padding: 12px 14px;
+      border-radius: 14px;
       border: none;
-      background-color: #007bff;
-      color: white;
+      font-weight: 600;
       cursor: pointer;
-      border-radius: 5px;
+      background: rgba(255, 255, 255, 0.85);
+      color: var(--clover-700);
+      border: 1px solid var(--border-soft);
     }
 
-    button:hover {
-      background-color: #0056b3;
+    .finish-hints {
+      margin-top: 8px;
+      padding: 12px 18px;
+      border-radius: 16px;
+      background: linear-gradient(135deg, var(--clover-500), var(--clover-600));
+      color: #fff;
+      border: none;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 18px 40px -26px rgba(79, 142, 96, 0.9);
+      display: none;
+    }
+
+    .finish-hints.visible {
+      display: block;
+    }
+
+    .start-button {
+      padding: 14px 20px;
+      border-radius: 16px;
+      background: linear-gradient(135deg, var(--clover-500), var(--clover-600));
+      color: #fff;
+      border: none;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 18px 40px -26px rgba(79, 142, 96, 0.9);
+    }
+
+    .start-button.hidden {
+      display: none;
+    }
+
+    .hint-counter {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+
+    @media (max-width: 768px) {
+      .outer-plate {
+        transform: scale(0.9);
+      }
+
+      .control-panel {
+        width: 100%;
+      }
+
+      .legend {
+        width: 100%;
+      }
     }
   </style>
 </head>
 
 <body>
-  <!-- Vocabulary input section -->
-  <div style="margin: 20px;">
-    <h2>Custom Vocabulary</h2>
-    <p>
-      Enter up to 16 words, separated by commas. If fewer than 16 words are provided,
-      random built-in words fill the remaining slots.
-    </p>
-    <textarea id="textInput" rows="4" cols="50" placeholder="Example: apple, car, book, ..."></textarea>
-    <br><br>
-    <button onclick="loadVoc()" style="padding: 8px 16px; cursor: pointer;">
-      Load Vocabulary
-    </button>
+  <div class="app-shell">
+    <header class="app-header">
+      <h1 class="app-title">So Clover</h1>
+      <div id="timerDisplay" class="timer-display hidden">00:00</div>
+    </header>
+
+    <main class="app-main">
+      <section id="mainMenu" class="menu">
+        <button id="customVocabBtn" class="primary-button">Play with Custom Vocabulary</button>
+        <button id="quickPlayBtn" class="secondary-button">Quick Play</button>
+      </section>
+
+      <section id="gameArea" class="game-area hidden">
+        <div class="outer-plate" id="outerPlate">
+          <div class="grid-container" id="plateContainer">
+            <div class="hint-display top-hint" id="topHintDisplay">Awaiting hint</div>
+            <div class="grid" id="grid">
+              <div class="grid-cell" data-row="0" data-col="0"></div>
+              <div class="grid-cell" data-row="0" data-col="1"></div>
+              <div class="grid-cell" data-row="1" data-col="0"></div>
+              <div class="grid-cell" data-row="1" data-col="1"></div>
+            </div>
+            <div class="hint-display bottom-hint" id="bottomHintDisplay">Awaiting hint</div>
+            <div class="hint-display left-hint" id="leftHintDisplay">Awaiting hint</div>
+            <div class="hint-display right-hint" id="rightHintDisplay">Awaiting hint</div>
+
+            <div id="card1" class="card locked-card">
+              <div class="side top">Top</div>
+              <div class="side right">Right</div>
+              <div class="side bottom">Bottom</div>
+              <div class="side left">Left</div>
+            </div>
+            <div id="card2" class="card locked-card">
+              <div class="side top">Top</div>
+              <div class="side right">Right</div>
+              <div class="side bottom">Bottom</div>
+              <div class="side left">Left</div>
+            </div>
+            <div id="card3" class="card locked-card">
+              <div class="side top">Top</div>
+              <div class="side right">Right</div>
+              <div class="side bottom">Bottom</div>
+              <div class="side left">Left</div>
+            </div>
+            <div id="card4" class="card locked-card">
+              <div class="side top">Top</div>
+              <div class="side right">Right</div>
+              <div class="side bottom">Bottom</div>
+              <div class="side left">Left</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="legend" id="legend" hidden>
+          <div class="legend-title">Card Feedback</div>
+          <div class="legend-row"><span class="legend-color legend-green"></span>Correct position & orientation</div>
+          <div class="legend-row"><span class="legend-color legend-yellow"></span>Correct position, wrong orientation</div>
+          <div class="legend-row"><span class="legend-color legend-orange"></span>Correct orientation, wrong position</div>
+          <div class="legend-row"><span class="legend-color legend-red"></span>Wrong position & orientation</div>
+        </div>
+
+        <div class="control-panel" id="controlPanel" hidden>
+          <button id="rotateCardCCW" class="rotate-card-control" title="Rotate selected card counter-clockwise">↺ Rotate Card</button>
+          <button id="rotateCardCW" class="rotate-card-control" title="Rotate selected card clockwise">↻ Rotate Card</button>
+          <button id="rotateGridBtn">↻ Rotate Grid</button>
+          <button id="confirmHintBtn" class="primary-action">Confirm Hints</button>
+          <button id="checkAnswerBtn" class="primary-action hidden">Check Answer</button>
+        </div>
+      </section>
+    </main>
   </div>
 
-  <!-- Outer wrapper for visual rotation -->
-  <div class="outer-plate" id="outerPlate">
-    <div class="grid-container" id="plateContainer">
-      <input type="text" class="hint-input top-hint" placeholder="Top Hint" />
-      <div class="grid" id="grid">
-        <div class="grid-cell" data-row="0" data-col="0"></div>
-        <div class="grid-cell" data-row="0" data-col="1"></div>
-        <div class="grid-cell" data-row="1" data-col="0"></div>
-        <div class="grid-cell" data-row="1" data-col="1"></div>
+  <div class="modal hidden" id="vocabModal">
+    <div class="modal-content">
+      <h2>Custom Vocabulary</h2>
+      <div class="modal-body">
+        <p>Enter up to 16 words separated by commas. Any empty spots will be filled with themed words.</p>
+        <textarea id="vocabInput" rows="4" placeholder="Example: apple, car, book, ..."></textarea>
       </div>
-      <input type="text" class="hint-input bottom-hint" placeholder="Bottom Hint" />
-      <input type="text" class="hint-input left-hint" placeholder="Left Hint" />
-      <input type="text" class="hint-input right-hint" placeholder="Right Hint" />
-
-      <!-- Four cards -->
-      <div id="card1" class="card">
-        <div class="side top">Top</div>
-        <div class="side right">Right</div>
-        <div class="side bottom">Bottom</div>
-        <div class="side left">Left</div>
-      </div>
-      <div id="card2" class="card">
-        <div class="side top">Top</div>
-        <div class="side right">Right</div>
-        <div class="side bottom">Bottom</div>
-        <div class="side left">Left</div>
-      </div>
-      <div id="card3" class="card">
-        <div class="side top">Top</div>
-        <div class="side right">Right</div>
-        <div class="side bottom">Bottom</div>
-        <div class="side left">Left</div>
-      </div>
-      <div id="card4" class="card">
-        <div class="side top">Top</div>
-        <div class="side right">Right</div>
-        <div class="side bottom">Bottom</div>
-        <div class="side left">Left</div>
+      <div class="modal-actions">
+        <button id="closeVocabModal" class="outline">Cancel</button>
+        <button id="submitVocab" class="solid">Load Vocabulary</button>
       </div>
     </div>
   </div>
 
-  <div class="buttons">
-    <button onclick="rotateSelectedCard()">Rotate Selected Card</button>
-    <button onclick="rotateEntireGrid()">Rotate Grid</button>
-    <button onclick="finishHint()">Finish Hint</button>
-    <button onclick="shareGame()">Share Game</button>
+  <div class="modal hidden" id="hintModal">
+    <div class="modal-content">
+      <h2>Create Your Clover Hints</h2>
+      <div class="hint-counter" id="hintCounter">Pair 1 of 4</div>
+      <div class="pair-display">
+        <div class="pair-chips" id="pairChips"></div>
+        <input type="text" id="hintInput" placeholder="Type a hint for this pair" />
+      </div>
+      <div class="hint-navigation">
+        <button id="prevPairBtn">Previous</button>
+        <button id="nextPairBtn">Next</button>
+      </div>
+      <button id="finishHintsBtn" class="finish-hints">Finish Hints</button>
+    </div>
+  </div>
+
+  <div class="modal hidden" id="confirmModal">
+    <div class="modal-content">
+      <h2>Ready to begin?</h2>
+      <div class="modal-body" id="confirmMessage">
+        <p>Once you confirm, everyone should be ready. The game will start as soon as you hit <strong>Start Game</strong>.</p>
+      </div>
+      <div class="modal-actions" id="confirmActions">
+        <button id="cancelConfirm" class="outline">Go Back</button>
+        <button id="proceedConfirm" class="solid">Confirm</button>
+      </div>
+      <button id="startGameBtn" class="start-button hidden">Start Game</button>
+    </div>
+  </div>
+
+  <div class="modal hidden" id="messageModal">
+    <div class="modal-content">
+      <h2 id="messageTitle">Notice</h2>
+      <div class="modal-body" id="messageBody"></div>
+      <div class="modal-actions">
+        <button id="messageClose" class="solid">Got it</button>
+      </div>
+    </div>
   </div>
 
   <script>
     /*******************************************************
-     * GLOBALS
+     * GLOBALS & STATE
      *******************************************************/
     let selectedCard = null;
-    let gridRotation = 0; // how many degrees we rotated outerPlate
-
-    // We'll store each card's "left, top" in a map, so we can do incremental updates
+    let gridRotation = 0;
     const cardPositions = {
       card1: { x: 0, y: 0 },
       card2: { x: 0, y: 0 },
@@ -242,7 +716,6 @@
       card4: { x: 0, y: 0 }
     };
 
-    // A big vocabulary array
     const builtInTW = [
       "animal", "apple", "arrow", "basket", "beach", "bear", "bird", "book", "bottle", "box",
       "boy", "branch", "bridge", "butterfly", "button", "cake", "camera", "car", "cat", "chair",
@@ -259,55 +732,357 @@
       "water", "whale", "window", "zebra"
     ];
 
-    /*******************************************************
-     * VOCABULARY
-     *******************************************************/
-    function loadVoc() {
-      let defaultTW = JSON.parse(JSON.stringify(builtInTW));
-      let inputText = document.getElementById('textInput').value;
-      let inputTW = inputText.split(',').map(s => s.trim());
+    const cards = [
+      document.getElementById('card1'),
+      document.getElementById('card2'),
+      document.getElementById('card3'),
+      document.getElementById('card4')
+    ];
 
-      // Replace empty with random
-      inputTW = inputTW.map(item => {
-        if (item === '' && defaultTW.length > 0) {
-          let r = Math.floor(Math.random() * defaultTW.length);
-          let replacement = defaultTW[r];
-          defaultTW.splice(r, 1);
-          return replacement;
+    const timerDisplay = document.getElementById('timerDisplay');
+    const legend = document.getElementById('legend');
+    const controlPanel = document.getElementById('controlPanel');
+    const rotateGridBtn = document.getElementById('rotateGridBtn');
+    const rotateCCWBtn = document.getElementById('rotateCardCCW');
+    const rotateCWBtn = document.getElementById('rotateCardCW');
+    const confirmHintBtn = document.getElementById('confirmHintBtn');
+    const checkAnswerBtn = document.getElementById('checkAnswerBtn');
+
+    const state = {
+      phase: 'menu',
+      activeWords: [],
+      selectedPairs: [],
+      fillerWords: [],
+      pairHints: ['', '', '', ''],
+      hintRecords: [],
+      activePairIndex: 0,
+      solutionPositions: {
+        card1: { row: 0, col: 0, rotation: 0 },
+        card2: { row: 0, col: 1, rotation: 0 },
+        card3: { row: 1, col: 0, rotation: 0 },
+        card4: { row: 1, col: 1, rotation: 0 }
+      },
+      elapsedSeconds: 0,
+      timerInterval: null,
+      resumeTimerOnClose: false,
+      checkAttempts: 0
+    };
+
+    /*******************************************************
+     * UTILS
+     *******************************************************/
+    function shuffle(array) {
+      for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+      }
+      return array;
+    }
+
+    function buildWordSet(words) {
+      const trimmed = words
+        .map((w) => w.trim())
+        .filter((w) => w.length > 0);
+
+      const finalWords = [];
+      const used = new Set();
+
+      trimmed.forEach((word) => {
+        if (!used.has(word.toLowerCase())) {
+          finalWords.push(word);
+          used.add(word.toLowerCase());
         }
-        return item;
       });
 
-      // Fill up to 16
-      while (inputTW.length < 16 && defaultTW.length > 0) {
-        let r = Math.floor(Math.random() * defaultTW.length);
-        let candidate = defaultTW[r];
-        if (!inputTW.includes(candidate)) {
-          inputTW.push(candidate);
+      const pool = [...builtInTW];
+      while (finalWords.length < 16 && pool.length > 0) {
+        const idx = Math.floor(Math.random() * pool.length);
+        const candidate = pool.splice(idx, 1)[0];
+        if (!used.has(candidate.toLowerCase())) {
+          finalWords.push(candidate);
+          used.add(candidate.toLowerCase());
         }
-        defaultTW.splice(r, 1);
       }
 
-      // Shuffle
-      inputTW.sort(() => Math.random() - 0.5);
+      while (finalWords.length < 16) {
+        finalWords.push(`Word ${finalWords.length + 1}`);
+      }
 
-      // Assign to 16 sides
-      let sideSelectors = [
-        "#card1 .top", "#card1 .right", "#card1 .bottom", "#card1 .left",
-        "#card2 .top", "#card2 .right", "#card2 .bottom", "#card2 .left",
-        "#card3 .top", "#card3 .right", "#card3 .bottom", "#card3 .left",
-        "#card4 .top", "#card4 .right", "#card4 .bottom", "#card4 .left"
-      ];
-      sideSelectors.forEach((sel, i) => {
-        let el = document.querySelector(sel);
-        if (el) el.textContent = inputTW[i] || "";
+      return finalWords.slice(0, 16);
+    }
+
+    function formatTime(seconds) {
+      const mins = Math.floor(seconds / 60).toString().padStart(2, '0');
+      const secs = (seconds % 60).toString().padStart(2, '0');
+      return `${mins}:${secs}`;
+    }
+
+    function updateTimerDisplay() {
+      timerDisplay.textContent = formatTime(state.elapsedSeconds);
+    }
+
+    function startTimer() {
+      stopTimer();
+      state.timerInterval = setInterval(() => {
+        state.elapsedSeconds += 1;
+        updateTimerDisplay();
+      }, 1000);
+    }
+
+    function stopTimer() {
+      if (state.timerInterval) {
+        clearInterval(state.timerInterval);
+        state.timerInterval = null;
+      }
+    }
+
+    function pauseTimer() {
+      stopTimer();
+    }
+
+    function resumeTimer() {
+      if (!state.timerInterval) {
+        state.timerInterval = setInterval(() => {
+          state.elapsedSeconds += 1;
+          updateTimerDisplay();
+        }, 1000);
+      }
+    }
+
+    function showModal(id) {
+      const modal = document.getElementById(id);
+      modal.classList.remove('hidden');
+    }
+
+    function hideModal(id) {
+      const modal = document.getElementById(id);
+      modal.classList.add('hidden');
+    }
+
+    function assignWordToSide(cardId, side, word) {
+      const selector = `#${cardId} .${side}`;
+      const element = document.querySelector(selector);
+      if (element) {
+        element.textContent = word || '';
+      }
+    }
+
+    function clearCardStatuses() {
+      cards.forEach((card) => {
+        card.classList.remove('status-perfect', 'status-orientation', 'status-location', 'status-wrong');
       });
     }
 
     /*******************************************************
-     * ROTATE CARD vs. ROTATE GRID
+     * MENU & VOCABULARY FLOW
+     *******************************************************/
+    document.getElementById('customVocabBtn').addEventListener('click', () => {
+      document.getElementById('vocabInput').value = '';
+      showModal('vocabModal');
+    });
+
+    document.getElementById('quickPlayBtn').addEventListener('click', () => {
+      beginHintPhase(buildWordSet([]));
+    });
+
+    document.getElementById('closeVocabModal').addEventListener('click', () => {
+      hideModal('vocabModal');
+    });
+
+    document.getElementById('submitVocab').addEventListener('click', () => {
+      const raw = document.getElementById('vocabInput').value.split(',');
+      const words = buildWordSet(raw);
+      hideModal('vocabModal');
+      beginHintPhase(words);
+    });
+
+    function beginHintPhase(words) {
+      state.activeWords = [...words];
+      const shuffled = shuffle([...state.activeWords]);
+      const pairs = [];
+      while (pairs.length < 4 && shuffled.length >= 2) {
+        const wordA = shuffled.shift();
+        const wordB = shuffled.shift();
+        pairs.push([wordA, wordB]);
+      }
+      state.selectedPairs = pairs;
+      state.fillerWords = [...shuffled];
+      state.pairHints = ['', '', '', ''];
+      state.activePairIndex = 0;
+      state.phase = 'hint';
+      document.getElementById('mainMenu').classList.add('hidden');
+      document.getElementById('gameArea').classList.remove('hidden');
+      controlPanel.hidden = false;
+      legend.hidden = false;
+      timerDisplay.classList.remove('hidden');
+      state.elapsedSeconds = 0;
+      updateTimerDisplay();
+      updateHintModal();
+      showModal('hintModal');
+      setPhase('pre-solve');
+      lockCards(true);
+      resetConfirmModal();
+      clearCardStatuses();
+    }
+
+    /*******************************************************
+     * HINT MODAL
+     *******************************************************/
+    const hintInput = document.getElementById('hintInput');
+    const hintCounter = document.getElementById('hintCounter');
+    const pairChips = document.getElementById('pairChips');
+    const finishHintsBtn = document.getElementById('finishHintsBtn');
+
+    hintInput.addEventListener('input', () => {
+      state.pairHints[state.activePairIndex] = hintInput.value;
+      toggleFinishHintVisibility();
+    });
+
+    document.getElementById('prevPairBtn').addEventListener('click', () => {
+      if (state.activePairIndex > 0) {
+        state.activePairIndex -= 1;
+        updateHintModal();
+      }
+    });
+
+    document.getElementById('nextPairBtn').addEventListener('click', () => {
+      if (state.activePairIndex < state.selectedPairs.length - 1) {
+        state.activePairIndex += 1;
+        updateHintModal();
+      }
+    });
+
+    finishHintsBtn.addEventListener('click', () => {
+      state.hintRecords = state.selectedPairs.map((pair, index) => ({
+        words: pair,
+        hint: state.pairHints[index].trim()
+      }));
+      hideModal('hintModal');
+      applyHintsAndWords();
+      setPhase('pre-solve');
+    });
+
+    function toggleFinishHintVisibility() {
+      const allFilled = state.pairHints.every((hint) => hint.trim().length > 0);
+      if (allFilled) {
+        finishHintsBtn.classList.add('visible');
+      } else {
+        finishHintsBtn.classList.remove('visible');
+      }
+    }
+
+    function updateHintModal() {
+      hintCounter.textContent = `Pair ${state.activePairIndex + 1} of ${state.selectedPairs.length}`;
+      pairChips.innerHTML = '';
+      const pair = state.selectedPairs[state.activePairIndex] || [];
+      pair.forEach((word) => {
+        const span = document.createElement('span');
+        span.className = 'pair-chip';
+        span.textContent = word;
+        pairChips.appendChild(span);
+      });
+      hintInput.value = state.pairHints[state.activePairIndex] || '';
+      hintInput.focus();
+      toggleFinishHintVisibility();
+    }
+
+    /*******************************************************
+     * APPLY HINTS & WORDS TO GRID
+     *******************************************************/
+    function applyHintsAndWords() {
+      const hints = state.pairHints.map((hint) => hint.trim());
+      document.getElementById('topHintDisplay').textContent = hints[0] || 'Top hint';
+      document.getElementById('rightHintDisplay').textContent = hints[1] || 'Right hint';
+      document.getElementById('bottomHintDisplay').textContent = hints[2] || 'Bottom hint';
+      document.getElementById('leftHintDisplay').textContent = hints[3] || 'Left hint';
+
+      const pairs = state.selectedPairs;
+      const fillers = [...state.fillerWords];
+
+      if (pairs[0]) {
+        assignWordToSide('card1', 'top', pairs[0][0]);
+        assignWordToSide('card2', 'top', pairs[0][1]);
+      }
+      if (pairs[1]) {
+        assignWordToSide('card2', 'right', pairs[1][0]);
+        assignWordToSide('card4', 'right', pairs[1][1]);
+      }
+      if (pairs[2]) {
+        assignWordToSide('card3', 'bottom', pairs[2][0]);
+        assignWordToSide('card4', 'bottom', pairs[2][1]);
+      }
+      if (pairs[3]) {
+        assignWordToSide('card1', 'left', pairs[3][0]);
+        assignWordToSide('card3', 'left', pairs[3][1]);
+      }
+
+      const otherAssignments = [
+        { card: 'card1', side: 'right' },
+        { card: 'card1', side: 'bottom' },
+        { card: 'card2', side: 'left' },
+        { card: 'card2', side: 'bottom' },
+        { card: 'card3', side: 'top' },
+        { card: 'card3', side: 'right' },
+        { card: 'card4', side: 'top' },
+        { card: 'card4', side: 'left' }
+      ];
+
+      otherAssignments.forEach(({ card, side }) => {
+        const word = fillers.length > 0 ? fillers.shift() : builtInTW[Math.floor(Math.random() * builtInTW.length)];
+        assignWordToSide(card, side, word);
+      });
+
+      resetCardsToSolution();
+    }
+
+    function resetCardsToSolution() {
+      const outerPlate = document.getElementById('outerPlate');
+      gridRotation = 0;
+      outerPlate.style.transform = 'rotate(0deg)';
+      cards.forEach((card) => {
+        const solution = state.solutionPositions[card.id];
+        card.dataset.rotation = 0;
+        card.style.transform = 'rotate(0deg)';
+        snapToGrid(card, solution.row, solution.col);
+        card.classList.remove('selected');
+      });
+      selectedCard = null;
+    }
+
+    function lockCards(locked) {
+      cards.forEach((card) => {
+        card.classList.toggle('locked-card', locked);
+      });
+    }
+
+    function setPhase(phase) {
+      state.phase = phase;
+      if (phase === 'pre-solve') {
+        rotateCCWBtn.classList.add('hidden');
+        rotateCWBtn.classList.add('hidden');
+        checkAnswerBtn.classList.add('hidden');
+        confirmHintBtn.classList.remove('hidden');
+        lockCards(true);
+        stopTimer();
+        state.elapsedSeconds = 0;
+        updateTimerDisplay();
+      }
+      if (phase === 'solving') {
+        rotateCCWBtn.classList.remove('hidden');
+        rotateCWBtn.classList.remove('hidden');
+        checkAnswerBtn.classList.remove('hidden');
+        confirmHintBtn.classList.add('hidden');
+        lockCards(false);
+      }
+    }
+
+    /*******************************************************
+     * ROTATE & DRAGGING (UNCHANGED MECHANICS)
      *******************************************************/
     function selectCard(card) {
+      if (card.classList.contains('locked-card')) {
+        return;
+      }
       if (selectedCard) {
         selectedCard.classList.remove('selected');
       }
@@ -315,73 +1090,41 @@
       selectedCard.classList.add('selected');
     }
 
-    function rotateSelectedCard() {
+    function rotateSelected(delta) {
       if (!selectedCard) return;
-      let rotation = parseInt(selectedCard.dataset.rotation || "0", 10);
-      rotation += 90;
+      let rotation = parseInt(selectedCard.dataset.rotation || '0', 10);
+      rotation = (rotation + delta + 360) % 360;
       selectedCard.style.transform = `rotate(${rotation}deg)`;
       selectedCard.dataset.rotation = rotation;
     }
 
+    function rotateSelectedCardClockwise() {
+      rotateSelected(90);
+    }
+
+    function rotateSelectedCardCounterClockwise() {
+      rotateSelected(-90);
+    }
+
     function rotateEntireGrid() {
       gridRotation += 90;
-      let outerPlate = document.getElementById('outerPlate');
+      const outerPlate = document.getElementById('outerPlate');
       outerPlate.style.transform = `rotate(${gridRotation}deg)`;
     }
 
-    function finishHint() {
-      // 1) Reset the entire grid rotation
-      gridRotation = 0;
-      const outerPlate = document.getElementById("outerPlate");
-      outerPlate.style.transform = "rotate(0deg)";
+    rotateCCWBtn.addEventListener('click', rotateSelectedCardCounterClockwise);
+    rotateCWBtn.addEventListener('click', rotateSelectedCardClockwise);
+    rotateGridBtn.addEventListener('click', rotateEntireGrid);
 
-      // 2) We have four cards and four cells in a 2×2 grid.
-      //    We'll shuffle the array of cell positions so each card gets a unique cell.
-      let cellPositions = [
-        { row: 0, col: 0 },
-        { row: 0, col: 1 },
-        { row: 1, col: 0 },
-        { row: 1, col: 1 },
-      ];
-
-      // Shuffle the array of cell positions
-      cellPositions.sort(() => Math.random() - 0.5);
-
-      // The 4 cards
-      const cards = [
-        document.getElementById("card1"),
-        document.getElementById("card2"),
-        document.getElementById("card3"),
-        document.getElementById("card4")
-      ];
-
-      // For each card, assign one of the shuffled positions
-      cards.forEach((card, index) => {
-        let { row, col } = cellPositions[index];
-
-        // Snap it to that row/col so no overlapping
-        snapToGrid(card, row, col);
-
-        // Then rotate the card randomly (0, 90, 180, or 270)
-        const possibleRotations = [0, 90, 180, 270];
-        const rIndex = Math.floor(Math.random() * possibleRotations.length);
-        const newRotation = possibleRotations[rIndex];
-
-        // Update card's rotation
-        card.dataset.rotation = newRotation;
-        card.style.transform = `rotate(${newRotation}deg)`;
-      });
-    }
-
-    /*******************************************************
-     * DRAGGING + INVERSE ROTATION
-     *******************************************************/
     function enableDragging(card) {
-      let lastX = 0,
-        lastY = 0;
-      const cardId = card.id; // 'card1', 'card2', etc.
+      let lastX = 0, lastY = 0;
+      const cardId = card.id;
 
       card.addEventListener('pointerdown', (e) => {
+        if (card.classList.contains('locked-card')) {
+          return;
+        }
+
         card.style.zIndex = 9999;
         selectCard(card);
 
@@ -395,7 +1138,6 @@
           let dxScreen = ev.clientX - lastX;
           let dyScreen = ev.clientY - lastY;
 
-          // Inverse-rotate by -gridRotation
           let rad = -gridRotation * (Math.PI / 180);
           let cosA = Math.cos(rad);
           let sinA = Math.sin(rad);
@@ -403,12 +1145,11 @@
           let dxLocal = (dxScreen * cosA) - (dyScreen * sinA);
           let dyLocal = (dxScreen * sinA) + (dyScreen * cosA);
 
-          // Update
           cardPositions[cardId].x += dxLocal;
           cardPositions[cardId].y += dyLocal;
 
-          card.style.left = cardPositions[cardId].x + "px";
-          card.style.top = cardPositions[cardId].y + "px";
+          card.style.left = cardPositions[cardId].x + 'px';
+          card.style.top = cardPositions[cardId].y + 'px';
 
           lastX = ev.clientX;
           lastY = ev.clientY;
@@ -420,26 +1161,19 @@
           card.removeEventListener('pointermove', onPointerMove);
           card.removeEventListener('pointerup', onPointerUp);
 
-          // Snapping with rotation-based re-mapping
           const gridRect = document.getElementById('grid').getBoundingClientRect();
-          const xUp = ev.clientX,
-            yUp = ev.clientY;
+          const xUp = ev.clientX;
+          const yUp = ev.clientY;
 
-          if (xUp > gridRect.left && xUp < gridRect.right &&
-            yUp > gridRect.top && yUp < gridRect.bottom) {
-
+          if (xUp > gridRect.left && xUp < gridRect.right && yUp > gridRect.top && yUp < gridRect.bottom) {
             let cellWidth = 150;
             let cellHeight = 150;
 
-            // FIRST: figure out the "visual row/col" by dividing screen coords
             let vCol = Math.floor((xUp - gridRect.left) / cellWidth);
             let vRow = Math.floor((yUp - gridRect.top) / cellHeight);
-            // vRow, vCol is the "visual" row/col based on how it looks on screen.
 
-            // THEN: remap that (vRow, vCol) to the unrotated row,col
             let [row, col] = mapVisualToLogical(vRow, vCol, gridRotation);
 
-            // Now row, col is the actual cell in unrotated terms.
             let snappedXScreen = gridRect.left + col * cellWidth;
             let snappedYScreen = gridRect.top + row * cellHeight;
 
@@ -449,8 +1183,13 @@
 
             cardPositions[cardId].x = snappedXLocal;
             cardPositions[cardId].y = snappedYLocal;
-            card.style.left = snappedXLocal + "px";
-            card.style.top = snappedYLocal + "px";
+            card.style.left = snappedXLocal + 'px';
+            card.style.top = snappedYLocal + 'px';
+            card.dataset.row = row;
+            card.dataset.col = col;
+          } else {
+            delete card.dataset.row;
+            delete card.dataset.col;
           }
 
           card.style.zIndex = 10;
@@ -461,10 +1200,6 @@
       });
     }
 
-    /*******************************************************
-     * MAP VISUAL (row, col) => LOGICAL (row, col)
-     * (2×2 grid only; rotation = multiple of 90°)
-     *******************************************************/
     function mapVisualToLogical(vRow, vCol, rotationDeg) {
       let rot = ((rotationDeg % 360) + 360) % 360;
       switch (rot) {
@@ -481,120 +1216,16 @@
       }
     }
 
-    /*******************************************************
-     * SHARE GAME: GENERATE A URL WITH THE CURRENT STATE
-     *******************************************************/
-     function shareGame() {
-  // Get hints
-  const topHint = document.querySelector(".top-hint").value;
-  const bottomHint = document.querySelector(".bottom-hint").value;
-  const leftHint = document.querySelector(".left-hint").value;
-  const rightHint = document.querySelector(".right-hint").value;
-
-  // Get vocabulary from each card side in the same order as loadVoc assigns them.
-  const sideSelectors = [
-    "#card1 .top", "#card1 .right", "#card1 .bottom", "#card1 .left",
-    "#card2 .top", "#card2 .right", "#card2 .bottom", "#card2 .left",
-    "#card3 .top", "#card3 .right", "#card3 .bottom", "#card3 .left",
-    "#card4 .top", "#card4 .right", "#card4 .bottom", "#card4 .left"
-  ];
-  const vocab = sideSelectors.map(sel => {
-    let el = document.querySelector(sel);
-    return el ? el.textContent : "";
-  });
-
-  // Build URL query parameters. URLSearchParams will automatically handle encoding.
-  const params = new URLSearchParams();
-  params.set("topHint", topHint);
-  params.set("bottomHint", bottomHint);
-  params.set("leftHint", leftHint);
-  params.set("rightHint", rightHint);
-  // Join the vocab words with commas.
-  params.set("vocab", vocab.join(","));
-
-  const shareUrl = window.location.origin + window.location.pathname + "?" + params.toString();
-
-  // Auto copy the URL to clipboard
-  if (navigator.clipboard && window.isSecureContext) {
-    // Use Clipboard API
-    navigator.clipboard.writeText(shareUrl).then(() => {
-      alert("URL copied to clipboard!");
-    }).catch(err => {
-      console.error("Failed to copy: ", err);
-    });
-  } else {
-    // Fallback for older browsers
-    const textArea = document.createElement("textarea");
-    textArea.value = shareUrl;
-    // Avoid scrolling to bottom
-    textArea.style.top = "0";
-    textArea.style.left = "0";
-    textArea.style.position = "fixed";
-    document.body.appendChild(textArea);
-    textArea.focus();
-    textArea.select();
-    try {
-      document.execCommand("copy");
-      alert("URL copied to clipboard!");
-    } catch (err) {
-      console.error("Fallback: Unable to copy", err);
-    }
-    document.body.removeChild(textArea);
-  }
-}
-
-    /*******************************************************
-     * LOAD GAME STATE FROM URL PARAMETERS
-     *******************************************************/
-    function loadGameFromURL() {
-      const params = new URLSearchParams(window.location.search);
-      const topHint = params.get("topHint");
-      const bottomHint = params.get("bottomHint");
-      const leftHint = params.get("leftHint");
-      const rightHint = params.get("rightHint");
-      if (topHint !== null) document.querySelector(".top-hint").value = topHint;
-      if (bottomHint !== null) document.querySelector(".bottom-hint").value = bottomHint;
-      if (leftHint !== null) document.querySelector(".left-hint").value = leftHint;
-      if (rightHint !== null) document.querySelector(".right-hint").value = rightHint;
-
-      const vocabParam = params.get("vocab");
-      if (vocabParam) {
-        const vocabArray = vocabParam.split(",");
-        const sideSelectors = [
-          "#card1 .top", "#card1 .right", "#card1 .bottom", "#card1 .left",
-          "#card2 .top", "#card2 .right", "#card2 .bottom", "#card2 .left",
-          "#card3 .top", "#card3 .right", "#card3 .bottom", "#card3 .left",
-          "#card4 .top", "#card4 .right", "#card4 .bottom", "#card4 .left"
-        ];
-        sideSelectors.forEach((sel, i) => {
-          const el = document.querySelector(sel);
-          if (el && vocabArray[i] !== undefined) {
-            el.textContent = vocabArray[i];
-          }
-        });
-      }
-      finishHint();
-    }
-
-    /*******************************************************
-     * INITIALIZE
-     *******************************************************/
-    const c1 = document.getElementById('card1');
-    const c2 = document.getElementById('card2');
-    const c3 = document.getElementById('card3');
-    const c4 = document.getElementById('card4');
-
-    [c1, c2, c3, c4].forEach(enableDragging);
-    [c1, c2, c3, c4].forEach((c) => {
-      c.addEventListener('click', () => selectCard(c));
+    cards.forEach(enableDragging);
+    cards.forEach((card) => {
+      card.addEventListener('click', () => selectCard(card));
     });
 
-    // Optionally snap them initially
     function snapToGrid(card, row, col) {
       const plateRect = document.getElementById('plateContainer').getBoundingClientRect();
       const gridRect = document.getElementById('grid').getBoundingClientRect();
-      const cellW = 150,
-        cellH = 150;
+      const cellW = 150;
+      const cellH = 150;
 
       let xScreen = gridRect.left + col * cellW;
       let yScreen = gridRect.top + row * cellH;
@@ -604,17 +1235,156 @@
 
       cardPositions[card.id].x = xLocal;
       cardPositions[card.id].y = yLocal;
-      card.style.left = xLocal + "px";
-      card.style.top = yLocal + "px";
+      card.style.left = xLocal + 'px';
+      card.style.top = yLocal + 'px';
+      card.dataset.row = row;
+      card.dataset.col = col;
     }
 
-    snapToGrid(c1, 0, 0);
-    snapToGrid(c2, 0, 1);
-    snapToGrid(c3, 1, 0);
-    snapToGrid(c4, 1, 1);
+    /*******************************************************
+     * CONFIRMATION FLOW & GAME START
+     *******************************************************/
+    confirmHintBtn.addEventListener('click', () => {
+      resetConfirmModal();
+      showModal('confirmModal');
+    });
 
-    // Load game state from URL parameters (if any)
-    loadGameFromURL();
+    document.getElementById('cancelConfirm').addEventListener('click', () => {
+      hideModal('confirmModal');
+      resetConfirmModal();
+    });
+
+    document.getElementById('proceedConfirm').addEventListener('click', () => {
+      document.getElementById('confirmMessage').innerHTML = '<p>Great! Click <strong>Start Game</strong> when everyone is ready.</p>';
+      document.getElementById('confirmActions').classList.add('hidden');
+      document.getElementById('startGameBtn').classList.remove('hidden');
+    });
+
+    document.getElementById('startGameBtn').addEventListener('click', () => {
+      hideModal('confirmModal');
+      resetConfirmModal();
+      startPuzzlePhase();
+    });
+
+    function resetConfirmModal() {
+      document.getElementById('confirmMessage').innerHTML = '<p>Once you confirm, everyone should be ready. The game will start as soon as you hit <strong>Start Game</strong>.</p>';
+      document.getElementById('confirmActions').classList.remove('hidden');
+      document.getElementById('startGameBtn').classList.add('hidden');
+    }
+
+    function startPuzzlePhase() {
+      setPhase('solving');
+      gridRotation = 0;
+      document.getElementById('outerPlate').style.transform = 'rotate(0deg)';
+      const cellPositions = [
+        { row: 0, col: 0 },
+        { row: 0, col: 1 },
+        { row: 1, col: 0 },
+        { row: 1, col: 1 }
+      ];
+      shuffle(cellPositions);
+      const rotations = [0, 90, 180, 270];
+      cards.forEach((card, index) => {
+        const { row, col } = cellPositions[index];
+        snapToGrid(card, row, col);
+        const rotation = rotations[Math.floor(Math.random() * rotations.length)];
+        card.dataset.rotation = rotation;
+        card.style.transform = `rotate(${rotation}deg)`;
+        card.classList.remove('selected');
+      });
+      selectedCard = null;
+      state.elapsedSeconds = 0;
+      state.checkAttempts = 0;
+      clearCardStatuses();
+      updateTimerDisplay();
+      startTimer();
+    }
+
+    /*******************************************************
+     * CHECK ANSWERS & FEEDBACK
+     *******************************************************/
+    checkAnswerBtn.addEventListener('click', () => {
+      pauseTimer();
+      const unsnapped = cards.some((card) => typeof card.dataset.row === 'undefined' || typeof card.dataset.col === 'undefined');
+      if (unsnapped) {
+        state.resumeTimerOnClose = true;
+        showMessage('Almost there', 'Make sure each card is fully snapped into the grid before checking again.');
+        return;
+      }
+
+      state.checkAttempts += 1;
+      let allCorrect = true;
+
+      cards.forEach((card) => {
+        const status = evaluateCardStatus(card);
+        applyCardStatus(card, status);
+        if (status !== 'perfect') {
+          allCorrect = false;
+        }
+      });
+
+      if (allCorrect) {
+        const timeUsed = state.elapsedSeconds;
+        const tries = state.checkAttempts;
+        const scoreRaw = (300 - timeUsed - tries * 50) / 3;
+        const finalScore = Math.max(0, Math.round(scoreRaw * 100) / 100);
+        state.resumeTimerOnClose = false;
+        showMessage(
+          'Clover Complete!',
+          `You solved the puzzle in <strong>${formatTime(timeUsed)}</strong> with <strong>${tries}</strong> check${tries === 1 ? '' : 's'}.<br/>Final Score: <strong>${finalScore}</strong>`
+        );
+        state.phase = 'complete';
+      } else {
+        state.resumeTimerOnClose = true;
+        showMessage('Keep trying', 'Use the color highlights to adjust the cards and try again.');
+      }
+    });
+
+    function evaluateCardStatus(card) {
+      const solution = state.solutionPositions[card.id];
+      const currentRow = parseInt(card.dataset.row, 10);
+      const currentCol = parseInt(card.dataset.col, 10);
+      const rotation = ((parseInt(card.dataset.rotation || '0', 10) % 360) + 360) % 360;
+      const correctPosition = currentRow === solution.row && currentCol === solution.col;
+      const correctOrientation = rotation === solution.rotation;
+
+      if (correctPosition && correctOrientation) return 'perfect';
+      if (!correctPosition && correctOrientation) return 'location';
+      if (correctPosition && !correctOrientation) return 'orientation';
+      return 'wrong';
+    }
+
+    function applyCardStatus(card, status) {
+      card.classList.remove('status-perfect', 'status-orientation', 'status-location', 'status-wrong');
+      switch (status) {
+        case 'perfect':
+          card.classList.add('status-perfect');
+          break;
+        case 'orientation':
+          card.classList.add('status-orientation');
+          break;
+        case 'location':
+          card.classList.add('status-location');
+          break;
+        default:
+          card.classList.add('status-wrong');
+          break;
+      }
+    }
+
+    function showMessage(title, body) {
+      document.getElementById('messageTitle').textContent = title;
+      document.getElementById('messageBody').innerHTML = `<p>${body}</p>`;
+      showModal('messageModal');
+    }
+
+    document.getElementById('messageClose').addEventListener('click', () => {
+      hideModal('messageModal');
+      if (state.resumeTimerOnClose && state.phase === 'solving') {
+        resumeTimer();
+      }
+      state.resumeTimerOnClose = false;
+    });
   </script>
 </body>
 
