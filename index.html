@@ -147,12 +147,15 @@
         text-align: center;
         text-transform: capitalize;
         max-width: 220px;
+        transition: transform 0.5s ease;
       }
 
       .hint-label.top { top: -48px; left: 50%; transform: translateX(-50%); }
       .hint-label.bottom { bottom: -48px; left: 50%; transform: translateX(-50%); }
-      .hint-label.left { left: -48px; top: 50%; transform: translateY(-50%) rotate(-90deg); transform-origin: center; }
-      .hint-label.right { right: -48px; top: 50%; transform: translateY(-50%) rotate(90deg); transform-origin: center; }
+      .hint-label.left { left: -48px; top: 50%; transform: translateY(-50%); }
+      .hint-label.right { right: -48px; top: 50%; transform: translateY(-50%); }
+      .hint-label.left,
+      .hint-label.right { transform-origin: center; }
 
       .grid {
         width: 296px;
@@ -892,6 +895,7 @@
         state.timerInterval = null;
         timerDisplay.textContent = '00:00';
         boardShell.style.transform = 'rotate(0deg)';
+        updateHintLabelOrientation();
         resetCardStatuses();
         state.cards = {};
         cardData.forEach(({ el }) => {
@@ -1029,6 +1033,7 @@
         applyHintsToBoard();
         state.gridRotation = 0;
         boardShell.style.transform = 'rotate(0deg)';
+        updateHintLabelOrientation();
         recordGridGeometry();
         if (previousPhase === 'hint') {
           gameScreen.classList.remove('hidden');
@@ -1423,18 +1428,67 @@
         }
       }
 
-      document.getElementById('rotateGridButton').addEventListener('click', () => {
+      function updateHintLabelOrientation() {
+        const rotation = state.gridRotation;
+        const topLabel = document.getElementById('hintTop');
+        const rightLabel = document.getElementById('hintRight');
+        const bottomLabel = document.getElementById('hintBottom');
+        const leftLabel = document.getElementById('hintLeft');
+
+        if (topLabel) {
+          topLabel.style.transform = `translateX(-50%) rotate(${-rotation}deg)`;
+        }
+        if (bottomLabel) {
+          bottomLabel.style.transform = `translateX(-50%) rotate(${-rotation}deg)`;
+        }
+        if (leftLabel) {
+          leftLabel.style.transform = `translateY(-50%) rotate(${-90 - rotation}deg)`;
+        }
+        if (rightLabel) {
+          rightLabel.style.transform = `translateY(-50%) rotate(${90 - rotation}deg)`;
+        }
+      }
+
+      const rotateGridButton = document.getElementById('rotateGridButton');
+      let gridRotationPending = false;
+
+      rotateGridButton.addEventListener('click', () => {
+        if (gridRotationPending) {
+          return;
+        }
+        gridRotationPending = true;
         state.gridRotation = normalizeDegrees(state.gridRotation + 90);
         boardShell.style.transform = `rotate(${state.gridRotation}deg)`;
-        recordGridGeometry();
-        state.cardOrder.forEach((cardId) => {
-          const zone = state.cardPlacement[cardId];
-          if (zone && zone.startsWith('grid-')) {
-            snapCardToZone(cardId, zone);
-          } else {
-            applyCardTransform(cardId);
+        updateHintLabelOrientation();
+
+        const finalizeRotation = () => {
+          recordGridGeometry();
+          state.cardOrder.forEach((cardId) => {
+            const zone = state.cardPlacement[cardId];
+            if (zone && zone.startsWith('grid-')) {
+              snapCardToZone(cardId, zone);
+            } else {
+              applyCardTransform(cardId);
+            }
+          });
+          gridRotationPending = false;
+        };
+
+        const onTransitionEnd = (event) => {
+          if (event.target !== boardShell || event.propertyName !== 'transform') {
+            return;
           }
-        });
+          boardShell.removeEventListener('transitionend', onTransitionEnd);
+          clearTimeout(fallbackTimeout);
+          finalizeRotation();
+        };
+
+        boardShell.addEventListener('transitionend', onTransitionEnd);
+
+        const fallbackTimeout = setTimeout(() => {
+          boardShell.removeEventListener('transitionend', onTransitionEnd);
+          finalizeRotation();
+        }, 600);
       });
 
       document.querySelectorAll('#cardRotateControls button').forEach((btn) => {
@@ -1710,6 +1764,7 @@
         snapCardsToSolution();
       }
 
+      updateHintLabelOrientation();
       loadFromURL();
     </script>
   </body>
