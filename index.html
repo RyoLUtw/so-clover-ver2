@@ -114,6 +114,7 @@
         flex-direction: column;
         align-items: center;
         gap: 28px;
+        user-select: none;
       }
 
       .board-wrapper {
@@ -197,6 +198,7 @@
         pointer-events: auto;
         touch-action: none;
         z-index: 10;
+        user-select: none;
       }
 
       .card.locked {
@@ -731,14 +733,16 @@
       }
 
       function recordGridGeometry() {
-        const boardRect = boardShell.getBoundingClientRect();
-        if (!boardRect.width || !boardRect.height) {
+        const gridEl = document.getElementById('grid');
+        if (!gridEl) return;
+        const gridRect = gridEl.getBoundingClientRect();
+        if (!gridRect.width || !gridRect.height) {
           return;
         }
 
         const stageRect = getStageRect();
-        const centerX = boardRect.left - stageRect.left + boardRect.width / 2;
-        const centerY = boardRect.top - stageRect.top + boardRect.height / 2;
+        const centerX = gridRect.left - stageRect.left + gridRect.width / 2;
+        const centerY = gridRect.top - stageRect.top + gridRect.height / 2;
         const rotationRad = (state.gridRotation * Math.PI) / 180;
         const cosR = Math.cos(rotationRad);
         const sinR = Math.sin(rotationRad);
@@ -760,7 +764,11 @@
 
         state.gridGeometry = {
           center: { x: centerX, y: centerY },
-          cells
+          cells,
+          gridWidth: gridRect.width,
+          gridHeight: gridRect.height,
+          cellWidth: gridRect.width / 2,
+          cellHeight: gridRect.height / 2
         };
       }
 
@@ -895,7 +903,8 @@
           state.cards[el.id] = {
             rotation: 0,
             x: 0,
-            y: 0
+            y: 0,
+            space: 'stage'
           };
         });
         document.getElementById('cardRotateControls').classList.add('hidden');
@@ -1076,6 +1085,10 @@
         const zoneEl = document.querySelector(`[data-zone="${zoneId}"]`);
         if (!zoneEl) return;
 
+        if (zoneId.startsWith('grid-') && (!state.gridGeometry || !state.gridGeometry.cells[zoneId])) {
+          recordGridGeometry();
+        }
+
         if (state.zoneOccupancy[zoneId] && state.zoneOccupancy[zoneId] !== cardId) {
           const displaced = state.zoneOccupancy[zoneId];
           const fallback = findOpenStoreSlot();
@@ -1091,22 +1104,19 @@
         let x;
         let y;
         if (zoneId.startsWith('grid-') && state.gridGeometry && state.gridGeometry.cells[zoneId]) {
-          const { center, cells } = state.gridGeometry;
+          const { cells } = state.gridGeometry;
           const base = cells[zoneId];
-          const rotationRad = (state.gridRotation * Math.PI) / 180;
-          const cosR = Math.cos(rotationRad);
-          const sinR = Math.sin(rotationRad);
-          const rotatedX = base.baseX * cosR - base.baseY * sinR;
-          const rotatedY = base.baseX * sinR + base.baseY * cosR;
           const cardWidth = card.offsetWidth;
           const cardHeight = card.offsetHeight;
-          x = center.x + rotatedX - cardWidth / 2;
-          y = center.y + rotatedY - cardHeight / 2;
+          x = base.baseX - cardWidth / 2;
+          y = base.baseY - cardHeight / 2;
+          state.cards[cardId].space = 'grid';
         } else {
           const stageRect = getStageRect();
           const zoneRect = zoneEl.getBoundingClientRect();
           x = zoneRect.left - stageRect.left;
           y = zoneRect.top - stageRect.top;
+          state.cards[cardId].space = 'stage';
         }
 
         state.cardPlacement[cardId] = zoneId;
@@ -1120,17 +1130,44 @@
 
       function applyCardTransform(cardId) {
         const card = document.getElementById(cardId);
-        const { x, y, rotation } = state.cards[cardId];
-        const zoneId = state.cardPlacement[cardId] || '';
-        const extraRotation = zoneId.startsWith('grid-') ? state.gridRotation : 0;
-        const totalRotation = normalizeDegrees(rotation + extraRotation);
-        card.style.transform = `translate(${x}px, ${y}px) rotate(${totalRotation}deg)`;
+        const cardState = state.cards[cardId];
+        let translateX = cardState.x;
+        let translateY = cardState.y;
+        if (cardState.space === 'grid' && state.gridGeometry) {
+          const { center } = state.gridGeometry;
+          const rotationRad = (state.gridRotation * Math.PI) / 180;
+          const cosR = Math.cos(rotationRad);
+          const sinR = Math.sin(rotationRad);
+          const rotatedX = cardState.x * cosR - cardState.y * sinR;
+          const rotatedY = cardState.x * sinR + cardState.y * cosR;
+          translateX = center.x + rotatedX;
+          translateY = center.y + rotatedY;
+        }
+        const extraRotation = cardState.space === 'grid' ? state.gridRotation : 0;
+        const totalRotation = normalizeDegrees(cardState.rotation + extraRotation);
+        card.style.transform = `translate(${translateX}px, ${translateY}px) rotate(${totalRotation}deg)`;
       }
 
       function normalizeDegrees(value) {
         let v = value % 360;
         if (v < 0) v += 360;
         return v;
+      }
+
+      function mapVisualToLogical(vRow, vCol, rotationDeg) {
+        const rot = ((rotationDeg % 360) + 360) % 360;
+        switch (rot) {
+          case 0:
+            return [vRow, vCol];
+          case 90:
+            return [1 - vCol, vRow];
+          case 180:
+            return [1 - vRow, 1 - vCol];
+          case 270:
+            return [vCol, 1 - vRow];
+          default:
+            return [vRow, vCol];
+        }
       }
 
       function findOpenStoreSlot() {
@@ -1236,40 +1273,51 @@
 
       const pointerState = {
         activeCardId: null,
+        pointerId: null,
         startX: 0,
         startY: 0,
         originX: 0,
         originY: 0,
         lastX: 0,
-        lastY: 0
+        lastY: 0,
+        hasMoved: false,
+        usingLocalSpace: false,
+        previousZone: null
       };
 
       function onCardPointerDown(event) {
         const card = event.currentTarget;
         if (state.phase !== 'solving') return;
+        event.preventDefault();
         pointerState.activeCardId = card.id;
+        pointerState.pointerId = event.pointerId;
         pointerState.startX = event.clientX;
         pointerState.startY = event.clientY;
         pointerState.originX = state.cards[card.id].x;
         pointerState.originY = state.cards[card.id].y;
         pointerState.lastX = event.clientX;
         pointerState.lastY = event.clientY;
+        pointerState.hasMoved = false;
+        pointerState.usingLocalSpace = state.cards[card.id].space === 'grid';
+        pointerState.previousZone = state.cardPlacement[card.id] || null;
+        if (pointerState.previousZone) {
+          state.zoneOccupancy[pointerState.previousZone] = null;
+        }
         card.setPointerCapture(event.pointerId);
         card.style.cursor = 'grabbing';
         card.addEventListener('pointermove', onCardPointerMove);
         card.addEventListener('pointerup', onCardPointerUp);
+        card.addEventListener('pointercancel', onCardPointerUp);
       }
 
       function onCardPointerMove(event) {
         const cardId = pointerState.activeCardId;
         if (!cardId) return;
-        const card = document.getElementById(cardId);
         const dxScreen = event.clientX - pointerState.lastX;
         const dyScreen = event.clientY - pointerState.lastY;
-        const currentZone = state.cardPlacement[cardId];
         let dxLocal = dxScreen;
         let dyLocal = dyScreen;
-        if (currentZone && currentZone.startsWith('grid-')) {
+        if (pointerState.usingLocalSpace) {
           const rad = (-state.gridRotation * Math.PI) / 180;
           const cosR = Math.cos(rad);
           const sinR = Math.sin(rad);
@@ -1280,6 +1328,13 @@
         state.cards[cardId].y += dyLocal;
         pointerState.lastX = event.clientX;
         pointerState.lastY = event.clientY;
+        if (!pointerState.hasMoved) {
+          const movedX = Math.abs(event.clientX - pointerState.startX);
+          const movedY = Math.abs(event.clientY - pointerState.startY);
+          if (movedX > 2 || movedY > 2) {
+            pointerState.hasMoved = true;
+          }
+        }
         applyCardTransform(cardId);
       }
 
@@ -1287,39 +1342,84 @@
         const cardId = pointerState.activeCardId;
         if (!cardId) return;
         const card = document.getElementById(cardId);
-        card.releasePointerCapture(event.pointerId);
+        if (pointerState.pointerId !== null) {
+          card.releasePointerCapture(pointerState.pointerId);
+        } else {
+          card.releasePointerCapture(event.pointerId);
+        }
         card.style.cursor = 'grab';
         card.removeEventListener('pointermove', onCardPointerMove);
         card.removeEventListener('pointerup', onCardPointerUp);
+        card.removeEventListener('pointercancel', onCardPointerUp);
+        const moved = pointerState.hasMoved;
+        const previousZone = pointerState.previousZone;
         pointerState.activeCardId = null;
-        snapToClosestZone(cardId);
+        pointerState.pointerId = null;
+        pointerState.hasMoved = false;
+        pointerState.usingLocalSpace = false;
+        pointerState.previousZone = null;
+        if (moved) {
+          snapToClosestZone(cardId);
+        } else if (previousZone) {
+          snapCardToZone(cardId, previousZone);
+        }
+      }
+
+      function findGridZoneForPoint(stageX, stageY) {
+        if (!state.gridGeometry) {
+          recordGridGeometry();
+          if (!state.gridGeometry) return null;
+        }
+        const gridEl = document.getElementById('grid');
+        if (!gridEl) return null;
+        const gridRect = gridEl.getBoundingClientRect();
+        const stageRect = getStageRect();
+        const screenX = stageX + stageRect.left;
+        const screenY = stageY + stageRect.top;
+        if (screenX < gridRect.left || screenX > gridRect.right || screenY < gridRect.top || screenY > gridRect.bottom) {
+          return null;
+        }
+        const cellWidth = gridRect.width / 2;
+        const cellHeight = gridRect.height / 2;
+        const vCol = Math.min(1, Math.max(0, Math.floor((screenX - gridRect.left) / cellWidth)));
+        const vRow = Math.min(1, Math.max(0, Math.floor((screenY - gridRect.top) / cellHeight)));
+        const [row, col] = mapVisualToLogical(vRow, vCol, state.gridRotation);
+        return `grid-${row}-${col}`;
       }
 
       function snapToClosestZone(cardId) {
-        const zones = [...gridCells, ...storeSlots];
-        let bestZone = null;
-        let bestDistance = Infinity;
-        const cardRect = document.getElementById(cardId).getBoundingClientRect();
+        const cardEl = document.getElementById(cardId);
+        if (!cardEl) return;
+        const stageRect = getStageRect();
+        const cardRect = cardEl.getBoundingClientRect();
         const cardCenter = {
-          x: cardRect.left + cardRect.width / 2,
-          y: cardRect.top + cardRect.height / 2
+          x: cardRect.left - stageRect.left + cardRect.width / 2,
+          y: cardRect.top - stageRect.top + cardRect.height / 2
         };
 
-        zones.forEach((zone) => {
-          const rect = zone.getBoundingClientRect();
+        const gridZone = findGridZoneForPoint(cardCenter.x, cardCenter.y);
+        if (gridZone) {
+          snapCardToZone(cardId, gridZone);
+          return;
+        }
+
+        let bestZone = null;
+        let bestDistance = Infinity;
+        storeSlots.forEach((slot) => {
+          const rect = slot.getBoundingClientRect();
           const center = {
-            x: rect.left + rect.width / 2,
-            y: rect.top + rect.height / 2
+            x: rect.left - stageRect.left + rect.width / 2,
+            y: rect.top - stageRect.top + rect.height / 2
           };
           const distance = Math.hypot(center.x - cardCenter.x, center.y - cardCenter.y);
           if (distance < bestDistance) {
             bestDistance = distance;
-            bestZone = zone;
+            bestZone = slot.dataset.zone;
           }
         });
 
         if (bestZone) {
-          snapCardToZone(cardId, bestZone.dataset.zone);
+          snapCardToZone(cardId, bestZone);
         }
       }
 
