@@ -1186,7 +1186,7 @@
     function rotateSelected(delta) {
       if (!selectedCard) return;
       let rotation = parseInt(selectedCard.dataset.rotation || '0', 10);
-      rotation = (rotation + delta + 360) % 360;
+      rotation += delta;
       selectedCard.style.transform = `rotate(${rotation}deg)`;
       selectedCard.dataset.rotation = rotation;
     }
