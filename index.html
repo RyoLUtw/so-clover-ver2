@@ -1431,7 +1431,7 @@
       if (allCorrect) {
         const timeUsed = state.elapsedSeconds;
         const tries = state.checkAttempts;
-        const scoreRaw = (300 - timeUsed - tries * 50) / 3;
+        const scoreRaw = 2*(300 - timeUsed - (tries-3) * tries * 20) / 3;
         const finalScore = Math.max(0, Math.round(scoreRaw * 100) / 100);
         state.resumeTimerOnClose = false;
         showMessage(
