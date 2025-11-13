@@ -491,6 +491,10 @@
       justify-content: flex-end;
     }
 
+    .modal-actions.hidden {
+      display: none;
+    }
+
     .modal-actions button {
       flex: 1;
       min-width: 140px;
@@ -1333,6 +1337,16 @@
     /*******************************************************
      * CONFIRMATION FLOW & GAME START
      *******************************************************/
+    function hideConfirmButtons() {
+      confirmActions.classList.add('hidden');
+      confirmActions.setAttribute('aria-hidden', 'true');
+    }
+
+    function showConfirmButtons() {
+      confirmActions.classList.remove('hidden');
+      confirmActions.removeAttribute('aria-hidden');
+    }
+
     confirmHintBtn.addEventListener('click', () => {
       resetConfirmModal();
       showModal('confirmModal');
@@ -1345,7 +1359,7 @@
 
     proceedConfirmBtn.addEventListener('click', () => {
       confirmMessage.innerHTML = '<p>Great! Click <strong>Start Game</strong> when everyone is ready.</p>';
-      confirmActions.hidden = true;
+      hideConfirmButtons();
       startGameBtn.classList.remove('hidden');
     });
 
@@ -1357,7 +1371,7 @@
 
     function resetConfirmModal() {
       confirmMessage.innerHTML = '<p>Once you confirm, everyone should be ready. The game will start as soon as you hit <strong>Start Game</strong>.</p>';
-      confirmActions.hidden = false;
+      showConfirmButtons();
       startGameBtn.classList.add('hidden');
     }
 
@@ -1548,7 +1562,7 @@
       resetConfirmModal();
       confirmMessage.innerHTML =
         '<p>This shared puzzle is ready. Click <strong>Start Game</strong> when your team is ready to begin.</p>';
-      confirmActions.hidden = true;
+      hideConfirmButtons();
       startGameBtn.classList.remove('hidden');
       showModal('confirmModal');
     }
