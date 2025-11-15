@@ -191,10 +191,18 @@
       transform: rotate(180deg);
     }
 
+    .left-hint,
+    .right-hint {
+      writing-mode: vertical-rl;
+      text-align: center;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
     .left-hint {
       grid-column: 1;
       grid-row: 2;
-      writing-mode: vertical-rl;
       transform: rotate(180deg);
       min-height: 260px;
     }
@@ -202,7 +210,6 @@
     .right-hint {
       grid-column: 3;
       grid-row: 2;
-      writing-mode: vertical-rl;
       min-height: 260px;
     }
 
@@ -325,7 +332,7 @@
       display: flex;
       flex-direction: column;
       gap: 8px;
-      padding: 16px 20px;
+      padding: 12px 16px;
       background: rgba(255, 255, 255, 0.7);
       border-radius: 18px;
       border: 1px solid rgba(255, 255, 255, 0.6);
@@ -333,10 +340,37 @@
       width: min(320px, 100%);
     }
 
-    .legend-title {
-      font-weight: 700;
+    .legend-toggle {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      width: 100%;
+      background: transparent;
+      border: none;
       color: var(--clover-600);
+      font-weight: 700;
       font-size: 0.95rem;
+      cursor: pointer;
+      padding: 4px 0;
+    }
+
+    .legend-chevron {
+      transition: transform 0.2s ease;
+    }
+
+    .legend.collapsed .legend-chevron {
+      transform: rotate(-90deg);
+    }
+
+    .legend-content {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .legend.collapsed .legend-content {
+      display: none;
     }
 
     .legend-row {
@@ -455,6 +489,10 @@
       flex-wrap: wrap;
       gap: 12px;
       justify-content: flex-end;
+    }
+
+    .modal-actions.hidden {
+      display: none;
     }
 
     .modal-actions button {
@@ -630,18 +668,25 @@
           </div>
         </div>
 
-        <div class="legend" id="legend" hidden>
-          <div class="legend-title">Card Feedback</div>
-          <div class="legend-row"><span class="legend-color legend-green"></span>Correct position & orientation</div>
-          <div class="legend-row"><span class="legend-color legend-yellow"></span>Correct position, wrong orientation</div>
-          <div class="legend-row"><span class="legend-color legend-orange"></span>Correct orientation, wrong position</div>
-          <div class="legend-row"><span class="legend-color legend-red"></span>Wrong position & orientation</div>
+        <div class="legend collapsed" id="legend">
+          <button id="legendToggle" class="legend-toggle" aria-expanded="false">
+            <span>Card Feedback</span>
+            <span class="legend-chevron" aria-hidden="true">▾</span>
+          </button>
+          <div class="legend-content" id="legendContent">
+            <div class="legend-row"><span class="legend-color legend-green"></span>Correct position & orientation</div>
+            <div class="legend-row"><span class="legend-color legend-yellow"></span>Correct position, wrong orientation</div>
+            <div class="legend-row"><span class="legend-color legend-orange"></span>Correct orientation, wrong position</div>
+            <div class="legend-row"><span class="legend-color legend-red"></span>Wrong position & orientation</div>
+          </div>
         </div>
 
         <div class="control-panel" id="controlPanel" hidden>
           <button id="rotateCardCCW" class="rotate-card-control" title="Rotate selected card counter-clockwise">↺ Rotate Card</button>
           <button id="rotateCardCW" class="rotate-card-control" title="Rotate selected card clockwise">↻ Rotate Card</button>
           <button id="rotateGridBtn">↻ Rotate Grid</button>
+          <button id="shareGameBtn" class="hidden">Share Game</button>
+          <button id="editHintsBtn" class="hidden">Edit Hints</button>
           <button id="confirmHintBtn" class="primary-action">Confirm Hints</button>
           <button id="checkAnswerBtn" class="primary-action hidden">Check Answer</button>
         </div>
@@ -747,6 +792,14 @@
     const rotateCWBtn = document.getElementById('rotateCardCW');
     const confirmHintBtn = document.getElementById('confirmHintBtn');
     const checkAnswerBtn = document.getElementById('checkAnswerBtn');
+    const shareGameBtn = document.getElementById('shareGameBtn');
+    const editHintsBtn = document.getElementById('editHintsBtn');
+    const legendToggle = document.getElementById('legendToggle');
+    const confirmActions = document.getElementById('confirmActions');
+    const confirmMessage = document.getElementById('confirmMessage');
+    const startGameBtn = document.getElementById('startGameBtn');
+    const cancelConfirmBtn = document.getElementById('cancelConfirm');
+    const proceedConfirmBtn = document.getElementById('proceedConfirm');
 
     const state = {
       phase: 'menu',
@@ -765,7 +818,8 @@
       elapsedSeconds: 0,
       timerInterval: null,
       resumeTimerOnClose: false,
-      checkAttempts: 0
+      checkAttempts: 0,
+      isSharedGame: false
     };
 
     /*******************************************************
@@ -873,6 +927,14 @@
       });
     }
 
+    function collapseLegend() {
+      if (!legend) return;
+      legend.classList.add('collapsed');
+      if (legendToggle) {
+        legendToggle.setAttribute('aria-expanded', 'false');
+      }
+    }
+
     /*******************************************************
      * MENU & VOCABULARY FLOW
      *******************************************************/
@@ -909,11 +971,18 @@
       state.fillerWords = [...shuffled];
       state.pairHints = ['', '', '', ''];
       state.activePairIndex = 0;
+      state.isSharedGame = false;
       state.phase = 'hint';
       document.getElementById('mainMenu').classList.add('hidden');
       document.getElementById('gameArea').classList.remove('hidden');
       controlPanel.hidden = false;
-      legend.hidden = false;
+      collapseLegend();
+      if (shareGameBtn) {
+        shareGameBtn.classList.add('hidden');
+      }
+      if (editHintsBtn) {
+        editHintsBtn.classList.add('hidden');
+      }
       timerDisplay.classList.remove('hidden');
       state.elapsedSeconds = 0;
       updateTimerDisplay();
@@ -961,6 +1030,14 @@
       applyHintsAndWords();
       setPhase('pre-solve');
     });
+
+    if (editHintsBtn) {
+      editHintsBtn.addEventListener('click', () => {
+        state.activePairIndex = 0;
+        updateHintModal();
+        showModal('hintModal');
+      });
+    }
 
     function toggleFinishHintVisibility() {
       const allFilled = state.pairHints.every((hint) => hint.trim().length > 0);
@@ -1033,6 +1110,9 @@
       });
 
       resetCardsToSolution();
+      if (shareGameBtn) {
+        shareGameBtn.classList.remove('hidden');
+      }
     }
 
     function resetCardsToSolution() {
@@ -1061,7 +1141,14 @@
         rotateCCWBtn.classList.add('hidden');
         rotateCWBtn.classList.add('hidden');
         checkAnswerBtn.classList.add('hidden');
-        confirmHintBtn.classList.remove('hidden');
+        if (state.isSharedGame) {
+          confirmHintBtn.classList.add('hidden');
+        } else {
+          confirmHintBtn.classList.remove('hidden');
+        }
+        if (editHintsBtn) {
+          editHintsBtn.classList.remove('hidden');
+        }
         lockCards(true);
         stopTimer();
         state.elapsedSeconds = 0;
@@ -1072,7 +1159,13 @@
         rotateCWBtn.classList.remove('hidden');
         checkAnswerBtn.classList.remove('hidden');
         confirmHintBtn.classList.add('hidden');
+        if (editHintsBtn) {
+          editHintsBtn.classList.add('hidden');
+        }
         lockCards(false);
+        if (shareGameBtn) {
+          shareGameBtn.classList.add('hidden');
+        }
       }
     }
 
@@ -1093,7 +1186,7 @@
     function rotateSelected(delta) {
       if (!selectedCard) return;
       let rotation = parseInt(selectedCard.dataset.rotation || '0', 10);
-      rotation = (rotation + delta + 360) % 360;
+      rotation += delta;
       selectedCard.style.transform = `rotate(${rotation}deg)`;
       selectedCard.dataset.rotation = rotation;
     }
@@ -1244,38 +1337,50 @@
     /*******************************************************
      * CONFIRMATION FLOW & GAME START
      *******************************************************/
+    function hideConfirmButtons() {
+      confirmActions.classList.add('hidden');
+      confirmActions.setAttribute('aria-hidden', 'true');
+    }
+
+    function showConfirmButtons() {
+      confirmActions.classList.remove('hidden');
+      confirmActions.removeAttribute('aria-hidden');
+    }
+
     confirmHintBtn.addEventListener('click', () => {
       resetConfirmModal();
       showModal('confirmModal');
     });
 
-    document.getElementById('cancelConfirm').addEventListener('click', () => {
+    cancelConfirmBtn.addEventListener('click', () => {
       hideModal('confirmModal');
       resetConfirmModal();
     });
 
-    document.getElementById('proceedConfirm').addEventListener('click', () => {
-      document.getElementById('confirmMessage').innerHTML = '<p>Great! Click <strong>Start Game</strong> when everyone is ready.</p>';
-      document.getElementById('confirmActions').classList.add('hidden');
-      document.getElementById('startGameBtn').classList.remove('hidden');
+    proceedConfirmBtn.addEventListener('click', () => {
+      confirmMessage.innerHTML = '<p>Great! Click <strong>Start Game</strong> when everyone is ready.</p>';
+      hideConfirmButtons();
+      startGameBtn.classList.remove('hidden');
     });
 
-    document.getElementById('startGameBtn').addEventListener('click', () => {
+    startGameBtn.addEventListener('click', () => {
       hideModal('confirmModal');
       resetConfirmModal();
       startPuzzlePhase();
     });
 
     function resetConfirmModal() {
-      document.getElementById('confirmMessage').innerHTML = '<p>Once you confirm, everyone should be ready. The game will start as soon as you hit <strong>Start Game</strong>.</p>';
-      document.getElementById('confirmActions').classList.remove('hidden');
-      document.getElementById('startGameBtn').classList.add('hidden');
+      confirmMessage.innerHTML = '<p>Once you confirm, everyone should be ready. The game will start as soon as you hit <strong>Start Game</strong>.</p>';
+      showConfirmButtons();
+      startGameBtn.classList.add('hidden');
     }
 
     function startPuzzlePhase() {
+      state.isSharedGame = false;
       setPhase('solving');
       gridRotation = 0;
       document.getElementById('outerPlate').style.transform = 'rotate(0deg)';
+      collapseLegend();
       const cellPositions = [
         { row: 0, col: 0 },
         { row: 0, col: 1 },
@@ -1326,7 +1431,7 @@
       if (allCorrect) {
         const timeUsed = state.elapsedSeconds;
         const tries = state.checkAttempts;
-        const scoreRaw = (300 - timeUsed - tries * 50) / 3;
+        const scoreRaw = 2*(300 - timeUsed - (tries-3) * tries * 20) / 3;
         const finalScore = Math.max(0, Math.round(scoreRaw * 100) / 100);
         state.resumeTimerOnClose = false;
         showMessage(
@@ -1372,6 +1477,163 @@
       }
     }
 
+    /*******************************************************
+     * SHARE GAME UTILITIES
+     *******************************************************/
+    function encodeList(values) {
+      return values
+        .map((value) => (value ?? '').replace(/\\/g, '\\\\').replace(/,/g, '\\,'))
+        .join(',');
+    }
+
+    function decodeList(value) {
+      const result = [];
+      let current = '';
+      let escaping = false;
+      for (const char of value) {
+        if (escaping) {
+          current += char;
+          escaping = false;
+        } else if (char === '\\') {
+          escaping = true;
+        } else if (char === ',') {
+          result.push(current);
+          current = '';
+        } else {
+          current += char;
+        }
+      }
+      result.push(current);
+      return result;
+    }
+
+    function buildShareableUrl() {
+      const combos = [
+        { param: 'topCombination', index: 0 },
+        { param: 'rightCombination', index: 1 },
+        { param: 'bottomCombination', index: 2 },
+        { param: 'leftCombination', index: 3 }
+      ];
+
+      const params = new URLSearchParams();
+      for (const { param, index } of combos) {
+        const hint = (state.pairHints[index] || '').trim();
+        const pair = state.selectedPairs[index] || [];
+        if (!hint || pair.length < 2 || !pair[0] || !pair[1]) {
+          return null;
+        }
+        params.set(param, encodeList([hint, pair[0], pair[1]]));
+      }
+
+      if ((state.fillerWords || []).length < 8) {
+        return null;
+      }
+      const extraTargets = state.fillerWords.slice(0, 8);
+      if (extraTargets.some((word) => !word)) {
+        return null;
+      }
+      params.set('extraTargets', encodeList(extraTargets));
+
+      const baseUrl = `${window.location.origin}${window.location.pathname}`;
+      const query = params.toString();
+      return query ? `${baseUrl}?${query}` : baseUrl;
+    }
+
+    async function handleShareGameClick() {
+      const url = buildShareableUrl();
+      if (!url) {
+        showMessage('Not ready to share', 'Finish entering all hints before sharing this puzzle.');
+        return;
+      }
+
+      try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          await navigator.clipboard.writeText(url);
+          showMessage('Link copied', `Share this link with your team:<br/><code>${url}</code>`);
+        } else {
+          throw new Error('Clipboard unavailable');
+        }
+      } catch (error) {
+        showMessage('Share this game', `Copy and share this link:<br/><code>${url}</code>`);
+      }
+    }
+
+    function prepareSharedStartModal() {
+      resetConfirmModal();
+      confirmMessage.innerHTML =
+        '<p>This shared puzzle is ready. Click <strong>Start Game</strong> when your team is ready to begin.</p>';
+      hideConfirmButtons();
+      startGameBtn.classList.remove('hidden');
+      showModal('confirmModal');
+    }
+
+    function loadSharedGame(hints, pairs, fillers) {
+      state.isSharedGame = true;
+      state.selectedPairs = pairs.map((pair) => [pair[0].trim(), pair[1].trim()]);
+      state.pairHints = hints.map((hint) => hint.trim());
+      state.fillerWords = fillers.slice(0, 8).map((word) => word.trim());
+      state.hintRecords = state.selectedPairs.map((words, index) => ({ words, hint: state.pairHints[index] }));
+      state.activeWords = [...state.selectedPairs.flat(), ...state.fillerWords];
+      state.activePairIndex = 0;
+      state.checkAttempts = 0;
+      state.elapsedSeconds = 0;
+      state.resumeTimerOnClose = false;
+
+      document.getElementById('mainMenu').classList.add('hidden');
+      document.getElementById('gameArea').classList.remove('hidden');
+      controlPanel.hidden = false;
+      collapseLegend();
+      timerDisplay.classList.remove('hidden');
+
+      updateTimerDisplay();
+      clearCardStatuses();
+      lockCards(true);
+      applyHintsAndWords();
+      setPhase('pre-solve');
+      prepareSharedStartModal();
+    }
+
+    function initSharedGameFromUrl() {
+      const params = new URLSearchParams(window.location.search);
+      const combos = [
+        { param: 'topCombination', index: 0 },
+        { param: 'rightCombination', index: 1 },
+        { param: 'bottomCombination', index: 2 },
+        { param: 'leftCombination', index: 3 }
+      ];
+
+      const hints = [];
+      const pairs = [];
+
+      for (const { param, index } of combos) {
+        const raw = params.get(param);
+        if (!raw) {
+          return;
+        }
+        const values = decodeList(raw);
+        if (values.length < 3) {
+          return;
+        }
+        const [hint, wordA, wordB] = values;
+        if (!hint || !wordA || !wordB) {
+          return;
+        }
+        hints[index] = hint;
+        pairs[index] = [wordA, wordB];
+      }
+
+      const extrasRaw = params.get('extraTargets');
+      if (!extrasRaw) {
+        return;
+      }
+      const extraWords = decodeList(extrasRaw).map((word) => word.trim());
+      if (extraWords.length < 8 || extraWords.slice(0, 8).some((word) => !word.trim())) {
+        return;
+      }
+
+      loadSharedGame(hints, pairs, extraWords);
+    }
+
     function showMessage(title, body) {
       document.getElementById('messageTitle').textContent = title;
       document.getElementById('messageBody').innerHTML = `<p>${body}</p>`;
@@ -1385,6 +1647,19 @@
       }
       state.resumeTimerOnClose = false;
     });
+
+    if (legendToggle && legend) {
+      legendToggle.addEventListener('click', () => {
+        const isCollapsed = legend.classList.toggle('collapsed');
+        legendToggle.setAttribute('aria-expanded', (!isCollapsed).toString());
+      });
+    }
+
+    if (shareGameBtn) {
+      shareGameBtn.addEventListener('click', handleShareGameClick);
+    }
+
+    initSharedGameFromUrl();
   </script>
 </body>
 
